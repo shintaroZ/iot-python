@@ -1,0 +1,11 @@
+{
+    "setting": "config/setting01.xml",
+    "dataType": 0,
+    "recordsCount": 1,
+    "records": [
+        {
+            "tenantId": "1",
+            "score": "2021/04/21 15:18:25"
+        }
+    ]
+}
