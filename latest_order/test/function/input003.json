@@ -1,0 +1,71 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"receveryFlg": 1,
+			"deviceId": "700400015-66DEF1DE",
+			"requestTimeStamp": "2021-02-16 12:56:38.895",
+			"records": [
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 12:56:38.895",
+					"value": 12.31
+				},
+				{
+					"sensorId": "s002",
+					"timeStamp": "2021-02-16 12:56:38.895",
+					"value": 23.56
+				},
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 12:56:38.895",
+					"value": 43.21
+				}
+			]
+		},
+		{
+			"receveryFlg": 1,
+			"deviceId": "700400014-66DEF1DE",
+			"requestTimeStamp": "2021-02-16 13:56:38.895",
+			"records": [
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 12.31
+				},
+				{
+					"sensorId": "s002",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 23.56
+				},
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 43.21
+				}
+			]
+		},
+		{
+			"receveryFlg": 1,
+			"deviceId": "700400015-66DEF1DE",
+			"requestTimeStamp": "2021-02-16 13:56:38.895",
+			"records": [
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 12.31
+				},
+				{
+					"sensorId": "s002",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 23.56
+				},
+				{
+					"sensorId": "s001",
+					"timeStamp": "2021-02-16 13:56:38.895",
+					"value": 43.21
+				}
+			]
+		}
+	]
+}
