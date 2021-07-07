@@ -20,6 +20,10 @@ def get_query(query_file_path):
         query = f.read()
     return query
 
+def createEvent(query_file_path):
+    f = open(query_file_path, 'r')
+    return json.load(f)
+
 class LambdaFunctionTest(unittest.TestCase):
 
     def test_rdsCommon_001(self):
@@ -66,6 +70,7 @@ class LambdaFunctionTest(unittest.TestCase):
         # ConfigParserへパース
         config = configparser.ConfigParser(allow_no_value=True)
         config.read_string(result)
+        
 
         self.assertEqual(config["rds setting"]["host"], "mysql.cpp9recuwclr.ap-northeast-1.rds.amazonaws.com")
 
@@ -97,6 +102,4 @@ class LambdaFunctionTest(unittest.TestCase):
         # 取得出来ない時は例外
         with self.assertRaises(Exception):
             initCommon.getPayLoadKey(token, "cognito:groups2")
-
-
 

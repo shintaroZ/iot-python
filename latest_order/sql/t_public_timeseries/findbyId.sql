@@ -3,7 +3,6 @@ select
 from
     T_PUBLIC_TIMESERIES
 where
-    COLLECTION_TYPE = '%(p_collectionType)s'
+    DATA_COLLECTION_SEQ = %(p_dataCollectionSeq)d
 and RECEIVED_DATETIME = '%(p_receivedDateTime)s'
-and SENSOR_NAME = '%(p_sensorName)s'
 ;
