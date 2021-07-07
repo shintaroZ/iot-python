@@ -18,7 +18,12 @@
 				{
 					"sensorId": "s009",
 					"timeStamp": "2021-07-05 03:10:00.000",
-					"value": 3456
+					"value": "False"
+				},
+				{
+					"sensorId": "s009",
+					"timeStamp": "2021-07-05 03:12:00.000",
+					"value": "True"
 				}
 			]
 		}

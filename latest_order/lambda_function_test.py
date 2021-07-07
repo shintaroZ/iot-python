@@ -155,7 +155,7 @@ class LambdaFunctionTest(unittest.TestCase):
         
         # 実行
         event = createEvent('test/function/input003.json')
-        lambda_function.lambda_handler(event, None)
+        result = lambda_function.lambda_handler(event, None)
         
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 3
@@ -188,9 +188,13 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result5["sensorValue"], 22.22)
         self.assertEqual(result6["sensorValue"], 33.33)
         
+        print ("============ result ============")
+        print (result)
+        
     # ----------------------------------------------------------------------
     # lambda_handler()の正常系テスト
-    # 蓄積対象外の場合、dbに登録されないこと
+    # s003の蓄積対象外の場合、dbに登録されないこと
+    # s009のBoolean型の場合、Falseは0、Trueは1で登録されること。
     # ----------------------------------------------------------------------
     def test_lambda_handler_004(self):
         print("---test_lambda_handler_004---")
@@ -210,15 +214,49 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , { "p_dataCollectionSeq": 5
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
         
+        result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
+                                , { "p_dataCollectionSeq": 6
+                                   , "p_receivedDateTime": "2021/07/05 12:10:00" })
+        
+        result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
+                                , { "p_dataCollectionSeq": 6
+                                   , "p_receivedDateTime": "2021/07/05 12:12:00" })
         self.assertEqual(result1, None)
+        self.assertEqual(result2["sensorValue"], 1)
+        self.assertEqual(result3["sensorValue"], 0)
         
         print ("============ result ============")
         print (result)
-        
+
+       
     # ----------------------------------------------------------------------
-    # lambda_handler()の正常系テスト
-    # 公開db登録時にユニークキー違反が発生しても処理を継続すること。
+    # lambda_handler()の異常系テスト
+    # 数値、bool型以外の値が来た場合、監視テーブルへ登録されること。
     # ----------------------------------------------------------------------
     def test_lambda_handler_005(self):
         print("---test_lambda_handler_005---")
+
+        # 公開DBクリア
+        RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
+                    , { "tableName": "T_PUBLIC_TIMESERIES"
+                    , "receivedDatetimeBefore": "2021/07/05 00:00:00"
+                    , "receivedDatetimeAfter": "2021/07/05 23:59:59" })
+        RDS.commit()
+        
+        # 実行
+        startDt = initCommon.getSysDateJst()
+        event = createEvent('test/function/input005.json')
+        result = lambda_function.lambda_handler(event, None)
+        endDt = initCommon.getSysDateJst()
+
+        # assert用にSelect
+        result1 = RDS.fetchall(initCommon.getQuery("test/sql/t_surveillance/select.sql")
+                                , { "p_occurredDateTimeStart": startDt
+                                   , "p_occurredDateTimeEnd":endDt})
+        
+        self.assertEqual(result1[0]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサ名:温度センサ 値:XXXXX)")
+        self.assertEqual(result1[1]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサ名:PLCboolsensor 値:ZZZZZ)")
+ 
+        print ("============ result ============")
+        print (result)
 

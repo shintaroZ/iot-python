@@ -234,9 +234,14 @@ def validateBoolean(value):
 
     result = False
     try:
-        # bool型へのキャストで妥当性チェック
-        bool(value)
-        result = True
+        # 型判定
+        if isinstance(value, str):
+            boolStrList = ["TRUE", "FALSE"]
+            if value.upper() in boolStrList:
+                result = True
+        elif isinstance(value, bool):
+            result = True
+            
     except ValueError:
         LOGGER.error('validate error (%s)' % value)
 
@@ -304,7 +309,7 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
     LOGGER.info('公開DB作成開始 : %s' % event)
 
@@ -379,8 +384,13 @@ def lambda_handler(event, context):
                 cnvValue = round((float(value) * revisionMagification), 2)
                 cnvUnit = sensorUnit
             elif ((collectionValueType == CollectionValueTypeEnum.Boolean) and validateBoolean(value)):
-                cnvValue = 0  if value == True else 1
-                cnvUnit = statusTrue if value == True else statusFalse
+                # 型判定
+                if (isinstance(value, str) and value.upper() == "FALSE") or (isinstance(value, bool) and value == False):
+                    cnvValue = 1
+                    cnvUnit = statusFalse
+                else:
+                    cnvValue = 0
+                    cnvUnit = statusTrue
                 
             # 公開DBの取得
             resPub = getPublicTable(rds, dataCollectionSeq, cnvTimeStamp)

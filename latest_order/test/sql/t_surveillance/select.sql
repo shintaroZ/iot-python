@@ -11,5 +11,4 @@ where
     OCCURRED_DATETIME between '%(p_occurredDateTimeStart)s' and '%(p_occurredDateTimeEnd)s'
 order by
     OCCURRED_DATETIME
-limit 1
 ;
