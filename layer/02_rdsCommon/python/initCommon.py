@@ -7,6 +7,12 @@ from botocore.config import Config
 import base64
 import json
 
+JSON_DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S.%f"
+# setter
+def setJsonDateTimeFormat(format):
+    global JSON_DATETIME_FORMAT
+    JSON_DATETIME_FORMAT = format
+
 # --------------------------------------------------
 # JSTのtime.struct_timeを返却する
 # --------------------------------------------------
@@ -115,3 +121,88 @@ def getS3Object(bucketName, key, regionName="ap-northeast-1", signatureVersion="
     s3 = boto3.client('s3', config=s3Config)
     result = s3.get_object(Bucket=bucketName, Key=key)
     return result["Body"].read().decode("UTF-8")
+
+# --------------------------------------------------
+# 日付妥当性チェック(true:正常、false:異常）
+# strTimeStamp(str)　: 日時文字列(yyyy-MM-dd HI:mm:ss)
+# --------------------------------------------------
+def validateTimeStamp(strTimeStamp):
+
+    result = False
+    try:
+        # 文字列⇒日付変換で妥当性チェック
+        datetime.datetime.strptime(strTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
+        result = True
+    except ValueError:
+        LOGGER.error('validate error (%s)' % strTimeStamp)
+
+    return result
+
+
+# --------------------------------------------------
+# 浮動小数点数値チェック(true:正常、false:異常）
+# value(obj)　: 入力値
+# --------------------------------------------------
+def isValidateFloat(value):
+
+    result = False
+    try:
+        # float型へのキャストで妥当性チェック
+        float(value)
+        result = True
+    except ValueError:
+        LOGGER.error('validate error (%s)' % value)
+
+    return result
+
+# --------------------------------------------------
+# 数値チェック(true:正常、false:異常）
+# value(obj)　: 入力値
+# --------------------------------------------------
+def isValidateNumber(value):
+
+    result = False
+    try:
+        # int型へのキャストで妥当性チェック
+        int(value)
+        result = True
+    except ValueError:
+        LOGGER.error('validate error (%s)' % value)
+
+    return result
+
+
+# --------------------------------------------------
+# Boolean型チェック(true:正常、false:異常）
+# value(obj)　: 入力値
+# --------------------------------------------------
+def isValidateBoolean(value):
+
+    result = False
+    try:
+        # 型判定
+        if isinstance(value, str):
+            boolStrList = ["TRUE", "FALSE"]
+            if value.upper() in boolStrList:
+                result = True
+        elif isinstance(value, bool):
+            result = True
+            
+    except ValueError:
+        LOGGER.error('validate error (%s)' % value)
+
+    return result
+
+# --------------------------------------------------
+# datetimeの変換関数
+# 利用方法  json.dumps(hoge, default=json_serial)
+# obj(obj)　: 入力値
+# --------------------------------------------------
+def json_serial(obj):
+    # 日付型の場合には、文字列に変換します
+    if isinstance(obj,datetime.datetime):
+        # return obj.isoformat()
+        
+        return obj.strftime(JSON_DATETIME_FORMAT)
+    # 上記以外はサポート対象外.
+    raise TypeError ("Type %s not serializable" % type(obj))
