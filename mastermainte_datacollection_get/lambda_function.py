@@ -224,6 +224,7 @@ def convertResult(result):
     reList.append(parentTable)
     
     reResult = {"records" : reList}
+    LOGGER.info(reResult)
     
     # Dict→str形式に変換して返却
     return json.dumps(reResult, ensure_ascii=False, default=initCommon.json_serial)

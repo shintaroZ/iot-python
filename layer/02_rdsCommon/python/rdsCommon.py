@@ -118,6 +118,7 @@ class rdsCommon:
                     else:
                         LOGGER.error('リトライ回数を超過しました。登録処理を終了します。: %s' % e)
                         retryFlg = False
+                        raise (e)
 
     # --------------------------------------------------
     # 手動コミット
