@@ -19,8 +19,6 @@ DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 IS_LIMIT = False
-SEQ_DC = 0
-SEQ_LC = 0
 
 # カラム名定数
 CLIENT_NAME = "clientName"
@@ -55,6 +53,10 @@ CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
 UPDATED_USER = "updatedUser"
 VERSION = "version"
+
+# データ型定数
+MAX_TYNYINT_UNSIGNED = 255
+MAX_SMALLINT_UNSIGNED = 65535
 
 # setter
 def setLogger(logger):
@@ -112,17 +114,6 @@ def setIsLimit(bl):
     IS_LIMIT = bl
 
 
-def setSeqDc(seq):
-    global SEQ_DC
-    SEQ_DC = seq
-
-
-def setSeqLc(seq):
-    global SEQ_LC
-    SEQ_LC = seq
-
-
-
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -154,8 +145,8 @@ def initConfig(clientName):
 # --------------------------------------------------
 def isArgument(event):
 
-    noneErrArray = []
     # 必須項目チェック
+    noneErrArray = []
     noneErrArray.append(CLIENT_NAME) if (CLIENT_NAME not in event) else 0
     noneErrArray.append(DEVICE_ID)if (DEVICE_ID not in event) else 0
     noneErrArray.append(SENSOR_ID) if (SENSOR_ID not in event) else 0
@@ -224,6 +215,40 @@ def isArgument(event):
     if 0 < len(limitArray):
         raise Exception("Missing required request parameters. [%s]" % ",".join(typeErrArray))
         
+    # データ長チェック
+    lengthArray = []
+    lengthArray.append(DEVICE_ID) if (20 < len(event[DEVICE_ID])) else 0
+    lengthArray.append(SENSOR_ID) if (10 < len(event[SENSOR_ID])) else 0
+    lengthArray.append(SENSOR_NAME) if (30 < len(event[SENSOR_NAME])) else 0
+    lengthArray.append(SENSOR_UNIT) if (SENSOR_UNIT in event and 10 < len(event[SENSOR_UNIT])) else 0
+    lengthArray.append(STATUS_TRUE) if (STATUS_TRUE in event and 10 < len(event[STATUS_TRUE])) else 0
+    lengthArray.append(STATUS_FALSE) if (STATUS_FALSE in event and 10 < len(event[STATUS_FALSE])) else 0
+    lengthArray.append(COLLECTION_VALUE_TYPE) if (MAX_TYNYINT_UNSIGNED < event[COLLECTION_VALUE_TYPE]) else 0
+    lengthArray.append(COLLECTION_TYPE) if (MAX_SMALLINT_UNSIGNED < event[COLLECTION_TYPE]) else 0
+    lengthArray.append(SAVING_FLG) if (MAX_TYNYINT_UNSIGNED < event[SAVING_FLG]) else 0
+    lengthArray.append(LIMIT_CHECK_FLG) if (MAX_TYNYINT_UNSIGNED < event[LIMIT_CHECK_FLG]) else 0
+
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_TYNYINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
+    lengthArray.append(LIMIT_COUNT) if (LIMIT_COUNT in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT]) else 0
+    lengthArray.append(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_RESET_RANGE]) else 0
+    lengthArray.append(ACTION_RANGE) if (ACTION_RANGE in event and MAX_SMALLINT_UNSIGNED < event[ACTION_RANGE]) else 0
+    lengthArray.append(NEXT_ACTION) if (NEXT_ACTION in event and MAX_TYNYINT_UNSIGNED < event[NEXT_ACTION]) else 0
+
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
+    
+    if LIMIT_RECORDS in event:
+        for r in event[LIMIT_RECORDS]:
+            lengthArray.append(LIMIT_SUB_NO) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_SUB_NO]) else 0
+            lengthArray.append(LIMIT_JUDGE_TYPE) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_JUDGE_TYPE]) else 0
+             
+    # 重複削除
+    set(lengthArray)
+    
+    # データ長異常の場合は例外スロー
+    if 0 < len(lengthArray):
+        raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
+    
     return
 
 # --------------------------------------------------
@@ -244,37 +269,31 @@ def createWhereParam(event):
     return {"p_whereParams" : whereStr}
 
 # --------------------------------------------------
-# 閾値マスタのUpdate判定
+# 起動パラメータにデータ定義マスタ用のパラメータを付与して返却する。
 # --------------------------------------------------
-def createUpsertMasterDataCollectionParams(event, result):
-    
-    params = {}
-    if 0 < len(result):
-        # 非必須項目の置き換え
-        event[SENSOR_UNIT] = result[0][SENSOR_UNIT] if (SENSOR_UNIT not in event) else event[SENSOR_UNIT]
-        event[STATUS_TRUE] = result[0][STATUS_TRUE] if (STATUS_TRUE not in event) else event[STATUS_TRUE]
-        event[STATUS_FALSE] = result[0][STATUS_FALSE] if (STATUS_FALSE not in event) else event[SENSOR_UNIT]
-        event[REVISION_MAGNIFICATION] = result[0][REVISION_MAGNIFICATION] if (REVISION_MAGNIFICATION not in event) else event[SENSOR_UNIT]
-        event[X_COORDINATE] = result[0][X_COORDINATE] if (X_COORDINATE not in event) else event[STATUS_TRUE]
-        event[Y_COORDINATE] = result[0][Y_COORDINATE] if (Y_COORDINATE not in event) else event[SENSOR_UNIT]
-
 def createDataCollectionParams(event, result, version):
     
     if result is not None:
         # 非必須項目の置き換え
-        event[SENSOR_UNIT] = result[0][SENSOR_UNIT] if (SENSOR_UNIT not in event) else event[SENSOR_UNIT]
-        event[STATUS_TRUE] = result[0][STATUS_TRUE] if (STATUS_TRUE not in event) else event[STATUS_TRUE]
-        event[STATUS_FALSE] = result[0][STATUS_FALSE] if (STATUS_FALSE not in event) else event[STATUS_FALSE]
-        event[REVISION_MAGNIFICATION] = result[0][REVISION_MAGNIFICATION] if (REVISION_MAGNIFICATION not in event) else event[REVISION_MAGNIFICATION]
-        event[X_COORDINATE] = result[0][X_COORDINATE] if (X_COORDINATE not in event) else event[X_COORDINATE]
-        event[Y_COORDINATE] = result[0][Y_COORDINATE] if (Y_COORDINATE not in event) else event[Y_COORDINATE]
+        event[SENSOR_UNIT] = result[SENSOR_UNIT] if (SENSOR_UNIT not in event) else event[SENSOR_UNIT]
+        event[STATUS_TRUE] = result[STATUS_TRUE] if (STATUS_TRUE not in event) else event[STATUS_TRUE]
+        event[STATUS_FALSE] = result[STATUS_FALSE] if (STATUS_FALSE not in event) else event[STATUS_FALSE]
+        event[REVISION_MAGNIFICATION] = result[REVISION_MAGNIFICATION] if (REVISION_MAGNIFICATION not in event) else event[REVISION_MAGNIFICATION]
+        event[X_COORDINATE] = result[X_COORDINATE] if (X_COORDINATE not in event) else event[X_COORDINATE]
+        event[Y_COORDINATE] = result[Y_COORDINATE] if (Y_COORDINATE not in event) else event[Y_COORDINATE]
     return createCommonParams(event, version)
 
+# --------------------------------------------------
+# 起動パラメータにシーケンス情報を付与して返却する。
+# --------------------------------------------------
 def createLSeqParams(event, version, dataCollectionSeq, limitCheckSeq):
     event[DATA_COLLECTION_SEQ] = dataCollectionSeq
     event[LIMIT_CHECK_SEQ] = limitCheckSeq
     return createCommonParams(event, version)
 
+# --------------------------------------------------
+# 起動パラメータに共通情報を付与して返却する。
+# --------------------------------------------------
 def createCommonParams(event, version):
 
     event[CREATED_AT] = initCommon.getSysDateJst()
@@ -291,8 +310,7 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    # setLogger(initCommon.getLogger(LOG_LEVEL))
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
