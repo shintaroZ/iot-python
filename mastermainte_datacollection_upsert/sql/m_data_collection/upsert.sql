@@ -21,14 +21,14 @@ values (
     , '%(sensorId)s'
     , %(dataCollectionSeq)d
     , '%(sensorName)s'
-    , '%(sensorUnit)s'
-    , '%(statusTrue)s'
-    , '%(statusFalse)s'
+    , %(sensorUnit)s
+    , %(statusTrue)s
+    , %(statusFalse)s
     , %(collectionValueType)d
     , %(collectionType)d
-    , %(revisionMagnification)f
-    , %(xCoordinate)f
-    , %(yCoordinate)f
+    , %(revisionMagnification)s
+    , %(xCoordinate)s
+    , %(yCoordinate)s
     , '%(createdAt)s'
     , '%(updatedUser)s'
     , %(version)d

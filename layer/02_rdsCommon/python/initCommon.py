@@ -134,7 +134,7 @@ def validateTimeStamp(strTimeStamp):
         datetime.datetime.strptime(strTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
         result = True
     except ValueError:
-        LOGGER.error('validate error (%s)' % strTimeStamp)
+        print('validate error (%s)' % strTimeStamp)
 
     return result
 
@@ -151,7 +151,7 @@ def isValidateFloat(value):
         float(value)
         result = True
     except ValueError:
-        LOGGER.error('validate error (%s)' % value)
+        print('validate error (%s)' % value)
 
     return result
 
@@ -167,7 +167,7 @@ def isValidateNumber(value):
         int(value)
         result = True
     except ValueError:
-        LOGGER.error('validate error (%s)' % value)
+        print('validate error (%s)' % value)
 
     return result
 
@@ -189,7 +189,7 @@ def isValidateBoolean(value):
             result = True
             
     except ValueError:
-        LOGGER.error('validate error (%s)' % value)
+        print('validate error (%s)' % value)
 
     return result
 

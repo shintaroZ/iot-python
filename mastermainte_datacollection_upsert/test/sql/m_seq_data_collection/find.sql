@@ -1,0 +1,2 @@
+select SEQUENCE_NO  as seqNo from M_SEQUENCE_DATA_COLLECTION
+;

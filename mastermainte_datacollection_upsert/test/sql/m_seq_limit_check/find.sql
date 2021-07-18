@@ -1,0 +1,1 @@
+select SEQUENCE_NO  as seqNo from M_SEQUENCE_LIMIT_CHECK

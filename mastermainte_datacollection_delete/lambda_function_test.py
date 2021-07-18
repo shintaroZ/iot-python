@@ -35,49 +35,13 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
     # ----------------------------------------------------------------------
-    # deviceId,sensorIdなし
+    #　データあり
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
 
         # 実行
         event = createEvent('test/function/input001.json')
-        result = lambda_function.lambda_handler(event, None)
-        
-        print ("================ result ================")
-        print (result)
-    # ----------------------------------------------------------------------
-    # sensorIdなし
-    # ----------------------------------------------------------------------
-    def test_lambda_handler_002(self):
-        print("---test_lambda_handler_002--")
-
-        # 実行
-        event = createEvent('test/function/input002.json')
-        result = lambda_function.lambda_handler(event, None)
-        
-        print ("================ result ================")
-        print (result)
-    # ----------------------------------------------------------------------
-    # deviceIdなし
-    # ----------------------------------------------------------------------
-    def test_lambda_handler_003(self):
-        print("---test_lambda_handler_003---")
-
-        # 実行
-        event = createEvent('test/function/input003.json')
-        result = lambda_function.lambda_handler(event, None)
-        
-        print ("================ result ================")
-        print (result)
-    # ----------------------------------------------------------------------
-    # deviceId,sensorIdあり
-    # ----------------------------------------------------------------------
-    def test_lambda_handler_004(self):
-        print("---test_lambda_handler_004---")
-
-        # 実行
-        event = createEvent('test/function/input004.json')
         result = lambda_function.lambda_handler(event, None)
         
         print ("================ result ================")

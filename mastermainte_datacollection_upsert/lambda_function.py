@@ -191,6 +191,7 @@ def isArgument(event):
     # 閾値の必須チェック（閾値成立回数条件〜閾値の何かが含まれる場合は必須）
     limitArray = [LIMIT_COUNT_TYPE, LIMIT_COUNT, LIMIT_COUNT_RESET_RANGE, ACTION_RANGE, NEXT_ACTION]
     limitChildArray = []
+    setIsLimit(False)
     limitArray.remove(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event) else 0
     limitArray.remove(LIMIT_COUNT) if (LIMIT_COUNT in event) else 0
     limitArray.remove(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in event) else 0
@@ -213,7 +214,7 @@ def isArgument(event):
     
     # 閾値項目が歯抜けの場合は例外スロー
     if 0 < len(limitArray):
-        raise Exception("Missing required request parameters. [%s]" % ",".join(typeErrArray))
+        raise Exception("Missing required request parameters. [%s]" % ",".join(limitArray))
         
     # データ長チェック
     lengthArray = []
@@ -273,14 +274,64 @@ def createWhereParam(event):
 # --------------------------------------------------
 def createDataCollectionParams(event, result, version):
     
-    if result is not None:
-        # 非必須項目の置き換え
-        event[SENSOR_UNIT] = result[SENSOR_UNIT] if (SENSOR_UNIT not in event) else event[SENSOR_UNIT]
-        event[STATUS_TRUE] = result[STATUS_TRUE] if (STATUS_TRUE not in event) else event[STATUS_TRUE]
-        event[STATUS_FALSE] = result[STATUS_FALSE] if (STATUS_FALSE not in event) else event[STATUS_FALSE]
-        event[REVISION_MAGNIFICATION] = result[REVISION_MAGNIFICATION] if (REVISION_MAGNIFICATION not in event) else event[REVISION_MAGNIFICATION]
-        event[X_COORDINATE] = result[X_COORDINATE] if (X_COORDINATE not in event) else event[X_COORDINATE]
-        event[Y_COORDINATE] = result[Y_COORDINATE] if (Y_COORDINATE not in event) else event[Y_COORDINATE]
+    # 起動パラメータの必須判定
+    # str項目
+    if SENSOR_UNIT in event:
+        event[SENSOR_UNIT] = "'" + event[SENSOR_UNIT] + "'"
+    elif result is None:
+        event[SENSOR_UNIT] = "NULL"
+    elif result[SENSOR_UNIT] is None:
+        event[SENSOR_UNIT] = "NULL"
+    else:
+        event[SENSOR_UNIT] = "'" + result[SENSOR_UNIT] + "'"
+        
+    if STATUS_TRUE in event:
+        event[STATUS_TRUE] = "'" + event[STATUS_TRUE] + "'"
+    elif result is None:
+        event[STATUS_TRUE] = "NULL"
+    elif result[STATUS_TRUE] is None:
+        event[STATUS_TRUE] = "NULL"
+    else:
+        event[STATUS_TRUE] = "'" + result[STATUS_TRUE] + "'"
+        
+    if STATUS_FALSE in event:
+        event[STATUS_FALSE] = "'" + event[STATUS_FALSE] + "'"
+    elif result is None:
+        event[STATUS_FALSE] = "NULL"
+    elif result[STATUS_FALSE] is None:
+        event[STATUS_FALSE] = "NULL"
+    else:
+        event[STATUS_FALSE] = "'" + result[STATUS_FALSE] + "'"
+    
+    # float項目
+    if REVISION_MAGNIFICATION in event:
+        event[REVISION_MAGNIFICATION] = event[REVISION_MAGNIFICATION]
+    elif result is None:
+        event[REVISION_MAGNIFICATION] = "NULL"
+    elif result[REVISION_MAGNIFICATION] is None:
+        event[REVISION_MAGNIFICATION] = "NULL"
+    else:
+        event[REVISION_MAGNIFICATION] = result[REVISION_MAGNIFICATION]
+        
+    if X_COORDINATE in event:
+        event[X_COORDINATE] = event[X_COORDINATE]
+    elif result is None:
+        event[X_COORDINATE] = "NULL"
+    elif result[X_COORDINATE] is None:
+        event[X_COORDINATE] = "NULL"
+    else:
+        event[X_COORDINATE] = result[X_COORDINATE]
+        
+    if Y_COORDINATE in event:
+        event[Y_COORDINATE] = event[Y_COORDINATE]
+    elif result is None:
+        event[Y_COORDINATE] = "NULL"
+    elif result[Y_COORDINATE] is None:
+        event[Y_COORDINATE] = "NULL"
+    else:
+        event[Y_COORDINATE] = result[Y_COORDINATE]
+        
+        
     return createCommonParams(event, version)
 
 # --------------------------------------------------
@@ -339,7 +390,7 @@ def lambda_handler(event, context):
         limitCheckSeq = result[LIMIT_CHECK_SEQ]
     else:
         seqLcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 1})
-        LOGGER.info("閾値判定マスタシーケンスの新規採番 [%d]" % seqLcResult["nextSeq"])
+        LOGGER.info("閾値条件マスタシーケンスの新規採番 [%d]" % seqLcResult["nextSeq"])
         limitCheckSeq = seqLcResult["nextSeq"]
     # バージョンのインクリメント
     if result is not None and VERSION in result:
