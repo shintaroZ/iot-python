@@ -9,9 +9,10 @@ select
     ,mlf.SAVING_FLG  as savingFlg
     ,mlf.LIMIT_CHECK_FLG as limitCheckFlg
 from
-    M_DATA_COLLECTION mdc inner join M_LINK_FLG mlf 
-    on mdc.DATA_COLLECTION_SEQ  = mlf.DATA_COLLECTION_SEQ 
+    M_DATA_COLLECTION mdc inner join M_LINK_FLG mlf
+    on mdc.DATA_COLLECTION_SEQ  = mlf.DATA_COLLECTION_SEQ
 where
     mdc.DEVICE_ID = '%(p_deviceId)s'
 and mdc.SENSOR_ID = '%(p_sensorId)s'
+and mdc.DELETE_COUNT = 0
 ;

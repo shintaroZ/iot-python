@@ -6,6 +6,6 @@
     <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python interpreter</pydev_property>
     
     <pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
-        <path>/Users/otsuishintarou/work/01_python/iot-python/layer/02_rdsCommon/python</path>
+        <path>C:\Users\shintaro\iot\iot-python\iot-python\layer\02_rdsCommon\python</path>
     </pydev_pathproperty>
 </pydev_project>

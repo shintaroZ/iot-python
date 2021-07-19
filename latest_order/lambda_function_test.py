@@ -10,11 +10,6 @@ import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
 
-def createEvent(query_file_path):
-    f = open(query_file_path, 'r')
-    return json.load(f)
-
-
 class LambdaFunctionTest(unittest.TestCase):
 
     RDS = None
@@ -40,7 +35,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_getMasterSensorDistribution_001(self):
         print("---test_getMasterSensorDistribution_001---")
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         result = lambda_function.getMasterDataCollection(RDS, "700400015-66DEF1DE", "s001")
         self.assertEqual(result['sensorName'], "温度センサ")
 
@@ -50,7 +45,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_getMasterSensorDistribution_002(self):
         print("---test_getMasterSensorDistribution_002---")
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         with self.assertRaises(SystemExit):
             lambda_function.getMasterDataCollection(RDS, "700400015-66DEF1DE", "xxxxx")
 
@@ -61,7 +56,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     # def test_getMasterSensorDistribution_003(self):
         # print("---test_getMasterSensorDistribution_003---")
-        # event = createEvent('test/function/input001.json')
+        # event = initCommon.readFileToJson('test/function/input001.json')
         #
         # # 予め別コネクションで行ロックする
         # con2 = pymysql.connect(host=lambda_function.DB_HOST, port=lambda_function.DB_PORT, user=lambda_function.DB_USER, passwd=lambda_function.DB_PASSWORD, db=lambda_function.DB_NAME, connect_timeout=lambda_function.DB_CONNECT_TIMEOUT)
@@ -94,7 +89,7 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.commit()
 
         # 実行
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         lambda_function.lambda_handler(event, None)
 
         # assert用にSelect
@@ -129,7 +124,7 @@ class LambdaFunctionTest(unittest.TestCase):
 
         # 実行
         startDt = initCommon.getSysDateJst()
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         lambda_function.lambda_handler(event, None)
         endDt = initCommon.getSysDateJst()
 
@@ -152,15 +147,15 @@ class LambdaFunctionTest(unittest.TestCase):
                     , "receivedDatetimeBefore": "2021/07/05 00:00:00"
                     , "receivedDatetimeAfter": "2021/07/05 23:59:59" })
         RDS.commit()
-        
+
         # 実行
-        event = createEvent('test/function/input003.json')
+        event = initCommon.readFileToJson('test/function/input003.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
-        
+
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
@@ -168,11 +163,11 @@ class LambdaFunctionTest(unittest.TestCase):
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:10:00" })
-        
+
         result4 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
-        
+
         result5 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
@@ -180,17 +175,17 @@ class LambdaFunctionTest(unittest.TestCase):
         result6 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:40:00" })
-        
+
         self.assertEqual(result1["sensorValue"], 12.34)
         self.assertEqual(result2["sensorValue"], 23.45)
         self.assertEqual(result3["sensorValue"], 34.56)
         self.assertEqual(result4["sensorValue"], 11.11)
         self.assertEqual(result5["sensorValue"], 22.22)
         self.assertEqual(result6["sensorValue"], 33.33)
-        
+
         print ("============ result ============")
         print (result)
-        
+
     # ----------------------------------------------------------------------
     # lambda_handler()の正常系テスト
     # s003の蓄積対象外の場合、dbに登録されないこと
@@ -205,30 +200,30 @@ class LambdaFunctionTest(unittest.TestCase):
                     , "receivedDatetimeBefore": "2021/07/05 00:00:00"
                     , "receivedDatetimeAfter": "2021/07/05 23:59:59" })
         RDS.commit()
-        
+
         # 実行
-        event = createEvent('test/function/input004.json')
+        event = initCommon.readFileToJson('test/function/input004.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 5
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
-        
+
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 6
                                    , "p_receivedDateTime": "2021/07/05 12:10:00" })
-        
+
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 6
                                    , "p_receivedDateTime": "2021/07/05 12:12:00" })
         self.assertEqual(result1, None)
         self.assertEqual(result2["sensorValue"], 1)
         self.assertEqual(result3["sensorValue"], 0)
-        
+
         print ("============ result ============")
         print (result)
 
-       
+
     # ----------------------------------------------------------------------
     # lambda_handler()の異常系テスト
     # 数値、bool型以外の値が来た場合、監視テーブルへ登録されること。
@@ -242,10 +237,10 @@ class LambdaFunctionTest(unittest.TestCase):
                     , "receivedDatetimeBefore": "2021/07/05 00:00:00"
                     , "receivedDatetimeAfter": "2021/07/05 23:59:59" })
         RDS.commit()
-        
+
         # 実行
         startDt = initCommon.getSysDateJst()
-        event = createEvent('test/function/input005.json')
+        event = initCommon.readFileToJson('test/function/input005.json')
         result = lambda_function.lambda_handler(event, None)
         endDt = initCommon.getSysDateJst()
 
@@ -253,10 +248,10 @@ class LambdaFunctionTest(unittest.TestCase):
         result1 = RDS.fetchall(initCommon.getQuery("test/sql/t_surveillance/select.sql")
                                 , { "p_occurredDateTimeStart": startDt
                                    , "p_occurredDateTimeEnd":endDt})
-        
-        self.assertEqual(result1[0]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサ名:温度センサ 値:XXXXX)")
-        self.assertEqual(result1[1]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサ名:PLCboolsensor 値:ZZZZZ)")
- 
+
+        self.assertEqual(result1[0]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサID:s001 値:XXXXX)")
+        self.assertEqual(result1[1]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサID:s008 値:ZZZZZ)")
+
         print ("============ result ============")
         print (result)
 

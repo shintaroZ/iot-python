@@ -182,9 +182,9 @@ def bulkInsert(rds, valuesArray, query):
         params = {'p_values': p_values}
         rds.execute(query, params)
     else:
-        LOGGER.debug("更新対象なし") 
+        LOGGER.debug("更新対象なし")
 
-    
+
 # --------------------------------------------------
 # 監視テーブル登録用のValuesパラメータ作成
 # --------------------------------------------------
@@ -194,7 +194,7 @@ def createSurveillanceValues(paramOccurredDatetime, paramFunctionName, paramMess
                                          paramMessage,
                                          registerDateTime)
 
-    
+
 # --------------------------------------------------
 # 日付妥当性チェック(true:正常、false:異常）
 # --------------------------------------------------
@@ -241,7 +241,7 @@ def validateBoolean(value):
                 result = True
         elif isinstance(value, bool):
             result = True
-            
+
     except ValueError:
         LOGGER.error('validate error (%s)' % value)
 
@@ -267,14 +267,14 @@ def getEventListReConv(event):
     # 受信メッセージ単位
     for i in range(len(event["receivedMessages"])):
         receivedMessages = event["receivedMessages"][i]
-            
+
         # デバイスIDが変わった場合、レコードを再形成
         if ((0 < i and receivedMessages["deviceId"] != bkDeviceId)):
             reReceivedMessages.append(tempTable)
 
             # 一時テーブル初期化
             tempTable = {}
-  
+
         # 各要素を一時保存
         if "deviceId" not in tempTable:
             tempTable["deviceId"] = receivedMessages["deviceId"]
@@ -285,14 +285,14 @@ def getEventListReConv(event):
             tempTable["records"] = tempTable["records"] + receivedMessages["records"]
         else:
             tempTable["records"] = receivedMessages["records"]
-            
+
         # 前回デバイスIDを待避
         bkDeviceId = receivedMessages["deviceId"]
-    
+
     # 最終ループ用
     if tempTable:
         reReceivedMessages.append(tempTable)
-    
+
     # 親要素の整形
     reEventTable["clientName"] = event["clientName"]
     if "receveryFlg" in event:
@@ -318,10 +318,10 @@ def lambda_handler(event, context):
 
     # eventパラメータの再形成
     # eventList = getEventListReConv(event)
-    
+
     # リカバリ判定
     isRecevery = False if "receveryFlg" not in event else True
-    
+
     reReceivedMessages = []
     for e in event["receivedMessages"]:
 
@@ -332,11 +332,11 @@ def lambda_handler(event, context):
         # センサIDで昇順ソート
         sortedRecords = sorted(e['records'], key=lambda x:x['sensorId'])
         beforeSensorId = ""
-        
+
         # BULK INSERT用配列
         publicTableValues = []
         surveillanceValues = []
-        
+
         reRecords = []
         for record in sortedRecords:
             # 現在時刻取得
@@ -353,7 +353,7 @@ def lambda_handler(event, context):
                 bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
                 bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
                 rds.commit
-                
+
                 # 一時配列クリア
                 publicTableValues = []
                 surveillanceValues = []
@@ -361,40 +361,32 @@ def lambda_handler(event, context):
             # データ定義マスタの取得
             res = getMasterDataCollection(rds, deviceId, sensorId)
             dataCollectionSeq = int(res['dataCollectionSeq'])
-            sensorName = res['sensorName']
-            sensorUnit = res['sensorUnit']
-            statusTrue = res['statusTrue']
-            statusFalse = res['statusFalse']
             collectionValueType = res['collectionValueType']
-            revisionMagification = float(res['revisionMagification'])
+            revisionMagification = 1 if (res['revisionMagification'] is None) else float(res['revisionMagification'])
             savingFlg = int(res['savingFlg'])
             limitCheckFlg = int(res['limitCheckFlg'])
 
             # 単位合わせ用に加工
             cnvTimeStamp = None
             cnvValue = None
-            cnvUnit = None 
             if validateTimeStamp(timeStamp):
                 # レコード一覧.タイムスタンプはUTCなのでJSTへ変換
                 cnvTimeStamp = datetime.datetime.strptime(timeStamp, '%Y-%m-%d %H:%M:%S.%f')
                 cnvTimeStamp = cnvTimeStamp + datetime.timedelta(seconds=32400)
-            
+
             # 数値・Boolean判定
             if ((collectionValueType == CollectionValueTypeEnum.Number) and validateNumber(value)):
                 cnvValue = round((float(value) * revisionMagification), 2)
-                cnvUnit = sensorUnit
             elif ((collectionValueType == CollectionValueTypeEnum.Boolean) and validateBoolean(value)):
                 # 型判定
                 if (isinstance(value, str) and value.upper() == "FALSE") or (isinstance(value, bool) and value == False):
                     cnvValue = 1
-                    cnvUnit = statusFalse
                 else:
                     cnvValue = 0
-                    cnvUnit = statusTrue
-                
+
             # 公開DBの取得
             resPub = getPublicTable(rds, dataCollectionSeq, cnvTimeStamp)
-            
+
             # 閾値判定ありの要素のみ戻り値に含める
             if limitCheckFlg == LimitCheckEnum.Valid:
                 reMap = {}
@@ -402,7 +394,7 @@ def lambda_handler(event, context):
                 reMap["timeStamp"] = timeStamp
                 reMap["value"] = value
                 reRecords.append(reMap)
-                
+
             # 蓄積有無判定
             if savingFlg != SavingEnum.Valid:
                 LOGGER.info("蓄積対象外の為、スキップします。(%s / %s)" % (deviceId, sensorId))
@@ -411,11 +403,11 @@ def lambda_handler(event, context):
             # センサ登録判定
             errMsg = ""
             if resPub["count"] != 0:
-                errMsg = "センサの欠損を検知しました。(デバイスID:%s 送信日時:%s センサ名:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorName, cnvTimeStamp)
+                errMsg = "センサの欠損を検知しました。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorId, cnvTimeStamp)
             elif cnvTimeStamp is None:
-                errMsg = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサ名:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorName, cnvTimeStamp)
+                errMsg = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorId, cnvTimeStamp)
             elif cnvValue is None:
-                errMsg = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサ名:%s 値:%s)" % (deviceId, requestTimeStamp, sensorName, value)
+                errMsg = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサID:%s 値:%s)" % (deviceId, requestTimeStamp, sensorId, value)
 
             if len(errMsg) == 0:
                 LOGGER.debug('★登録対象 (%d / %s / %f / %s)' % (dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
@@ -426,25 +418,25 @@ def lambda_handler(event, context):
                 else:
                     LOGGER.warn(errMsg)
                     surveillanceValues.append(createSurveillanceValues(nowDateTime, "公開DB作成機能", errMsg, nowDateTime))
-                    
+
             # 前回センサID
             beforeSensorId = sensorId
-            
+
         # commit
         bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
         bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
         rds.commit()
-        
+
         # 戻り値用に退避
         tempTable = {}
         tempTable["deviceId"] = deviceId
         tempTable["requestTimeStamp"] = requestTimeStamp
         tempTable["records"] = reRecords
         reReceivedMessages.append(tempTable)
-        
+
     # close
     del rds
-    
+
     # 戻り値整形
     reEventTable = {}
     reEventTable["clientName"] = event["clientName"]
