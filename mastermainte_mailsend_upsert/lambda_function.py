@@ -130,11 +130,11 @@ def isArgument(event):
     noneErrArray.append(SEND_TIME_TO) if (SEND_TIME_TO not in event) else 0
     noneErrArray.append(MAIL_SUBJECT) if (MAIL_SUBJECT not in event) else 0
     noneErrArray.append(MAIL_TEXT) if (MAIL_TEXT not in event) else 0
-    
+
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
         raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
-    
+
     # 型チェック
     typeErrArray = []
     typeErrArray.append(MAIL_SEND_ID) if (initCommon.isValidateNumber(event[MAIL_SEND_ID]) == False) else 0
@@ -144,26 +144,28 @@ def isArgument(event):
     # 型異常の場合は例外スロー
     if 0 < len(typeErrArray):
         raise TypeError("The parameters is type invalid. [%s]" % ",".join(typeErrArray))
-    
+
     # メール通知IDの範囲チェック
     rangeArray = []
     rangeArray.append(MAIL_SEND_ID) if(5 < event[MAIL_SEND_ID] or event[MAIL_SEND_ID] < 1) else 0
-        
+
     # 閾値項目が歯抜けの場合は例外スロー
     if 0 < len(rangeArray):
         raise Exception("The parameters is range invalid. [%s]" % ",".join(rangeArray))
-        
+
     # データ長チェック
     lengthArray = []
     lengthArray.append(EMAIL_ADDRESS) if (256 < len(event[EMAIL_ADDRESS])) else 0
     lengthArray.append(SEND_TIME_FROM) if (6 < len(event[SEND_TIME_FROM])) else 0
     lengthArray.append(SEND_TIME_TO) if (6 < len(event[SEND_TIME_TO])) else 0
     lengthArray.append(MAIL_SUBJECT) if (30 < len(event[MAIL_SUBJECT])) else 0
-    
+    lengthArray.append(SEND_WEEK_TYPE) if (MAX_TYNYINT_UNSIGNED < event[SEND_WEEK_TYPE]) else 0
+    lengthArray.append(SEND_FREQUANCY) if (MAX_TYNYINT_UNSIGNED < event[SEND_FREQUANCY]) else 0
+
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
         raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
-    
+
     return
 
 # --------------------------------------------------
@@ -176,7 +178,7 @@ def createCommonParams(event):
     event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
     return event
 
-    
+
 #####################
 # main
 #####################
@@ -184,16 +186,16 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ更新開始 : %s' % event)
 
     # 入力チェック
     isArgument(event)
-    
+
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
-    
+
     try:
         # メール通知マスタのUPSERT
         LOGGER.info("メール通知マスタのUPSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
@@ -202,10 +204,10 @@ def lambda_handler(event, context):
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()
         raise ex
-    
+
     # commit
     rds.commit()
-    
+
     # close
     del rds
-    
+

@@ -137,24 +137,24 @@ def isArgument(event):
     # 存在チェック
     if "clientName" not in event:
         noneErrArray.append("clientName")
-    
+
     if 0 < len(noneErrArray):
         raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
-    
+
     return True
 
 # --------------------------------------------------
 # 戻り値整形
 # --------------------------------------------------
 def convertResult(result):
-    
+
      # 戻り値整形
     reList = []
     beforeKeyTable = {}
     childList = []
     parentTable = {}
     parentList =[]
-    
+
     dataCollectionTable = {}
     dataCollectionList = []
     limitCheckTable = {}
@@ -162,9 +162,9 @@ def convertResult(result):
     limitTable = {}
     limitList = []
     beforeKeyTable = {}
-    
+
     for i in range(len(result)):
-        
+
         # キーが異なる場合にセット
         if ((DEVICE_ID in beforeKeyTable and beforeKeyTable[DEVICE_ID] != result[i][DEVICE_ID]) or
             (SENSOR_ID in beforeKeyTable and beforeKeyTable[SENSOR_ID] != result[i][SENSOR_ID]) ):
@@ -175,7 +175,7 @@ def convertResult(result):
             # 一時領域クリア
             childList = []
             parentTable = {}
-        
+
         if len(parentTable) == 0:
             parentTable[DEVICE_ID] = result[i][DEVICE_ID]
             parentTable[SENSOR_ID] = result[i][SENSOR_ID]
@@ -191,7 +191,7 @@ def convertResult(result):
             parentTable[Y_COORDINATE] = result[i][Y_COORDINATE]
             parentTable[SAVING_FLG] = result[i][SAVING_FLG]
             parentTable[LIMIT_CHECK_FLG] = result[i][LIMIT_CHECK_FLG]
-            
+
             # 可変部
             if result[i][LIMIT_CHECK_SEQ] is not None:
                 parentTable[LIMIT_CHECK_SEQ] = result[i][LIMIT_CHECK_SEQ]
@@ -200,16 +200,16 @@ def convertResult(result):
                 parentTable[LIMIT_COUNT_RESET_RANGE] = result[i][LIMIT_COUNT_RESET_RANGE]
                 parentTable[ACTION_RANGE] = result[i][ACTION_RANGE]
                 parentTable[NEXT_ACTION] = result[i][NEXT_ACTION]
-            
+
             parentTable[CREATED_AT] = result[i][CREATED_AT]
             parentTable[UPDATED_AT] = result[i][UPDATED_AT]
             parentTable[UPDATED_USER] = result[i][UPDATED_USER]
             parentTable[VERSION] = result[i][VERSION]
-        
+
             # キー項目を退避
             beforeKeyTable[DEVICE_ID] = result[i][DEVICE_ID]
             beforeKeyTable[SENSOR_ID] = result[i][SENSOR_ID]
-        
+
         # 可変部
         if result[i][LIMIT_CHECK_SEQ] is not None:
             childTable = {}
@@ -217,18 +217,18 @@ def convertResult(result):
             childTable[LIMIT_JUDGE_TYPE] = result[i][LIMIT_JUDGE_TYPE]
             childTable[LIMIT_VALUE] = result[i][LIMIT_VALUE]
             childList.append(childTable)
-        
+
     # 最終ループ用
     if 0 < len(childList):
         parentTable[LIMIT_RECORDS] = childList
     reList.append(parentTable)
-    
+
     reResult = {"records" : reList}
     LOGGER.info(reResult)
-    
+
     # Dict→str形式に変換して返却
     return json.dumps(reResult, ensure_ascii=False, default=initCommon.json_serial)
-        
+
 # --------------------------------------------------
 # データ定義マスタ参照の可変パラメータ作成
 # --------------------------------------------------
@@ -240,12 +240,12 @@ def createWhereParam(event):
         whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
     if "sensorId" in event:
         whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
-    
+
     if 0 < len(whereArray):
         whereStr = " ".join(whereArray)
-    
+
     return {"p_whereParams" : whereStr}
-    
+
 #####################
 # main
 #####################
@@ -259,18 +259,18 @@ def lambda_handler(event, context):
 
     # 入力チェック
     isArgument(event)
-    
+
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
     # マスタselect
     result = rds.fetchall(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
                           , createWhereParam(event))
-    
+
     # 戻り値整形
     reReult = convertResult(result)
-    
+
     # close
     del rds
-    
+
     return reReult

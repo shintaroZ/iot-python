@@ -10,11 +10,6 @@ import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
 
-def createEvent(query_file_path):
-    f = open(query_file_path, 'r')
-    return json.load(f)
-
-
 class LambdaFunctionTest(unittest.TestCase):
 
     RDS = None
@@ -41,9 +36,9 @@ class LambdaFunctionTest(unittest.TestCase):
         print("---test_lambda_handler_001---")
 
         # 実行
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         print ("================ result ================")
         print (result)
     # ----------------------------------------------------------------------
@@ -53,9 +48,9 @@ class LambdaFunctionTest(unittest.TestCase):
         print("---test_lambda_handler_002--")
 
         # 実行
-        event = createEvent('test/function/input002.json')
+        event = initCommon.readFileToJson('test/function/input002.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         print ("================ result ================")
         print (result)
     # ----------------------------------------------------------------------
@@ -65,9 +60,9 @@ class LambdaFunctionTest(unittest.TestCase):
         print("---test_lambda_handler_003---")
 
         # 実行
-        event = createEvent('test/function/input003.json')
+        event = initCommon.readFileToJson('test/function/input003.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         print ("================ result ================")
         print (result)
     # ----------------------------------------------------------------------
@@ -77,9 +72,9 @@ class LambdaFunctionTest(unittest.TestCase):
         print("---test_lambda_handler_004---")
 
         # 実行
-        event = createEvent('test/function/input004.json')
+        event = initCommon.readFileToJson('test/function/input004.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         print ("================ result ================")
         print (result)
 

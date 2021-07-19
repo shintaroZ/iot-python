@@ -9,12 +9,6 @@ import pymysql
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
-
-def createEvent(query_file_path):
-    f = open(query_file_path, 'r')
-    return json.load(f)
-
-
 class LambdaFunctionTest(unittest.TestCase):
 
     RDS = None
@@ -35,15 +29,15 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
     # ----------------------------------------------------------------------
-    # deviceId,sensorIdなし
+    # 全件取得
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
 
         # 実行
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
         result = lambda_function.lambda_handler(event, None)
-        
+
         print ("================ result ================")
         print (result)
 

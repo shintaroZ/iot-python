@@ -187,7 +187,7 @@ def isValidateBoolean(value):
                 result = True
         elif isinstance(value, bool):
             result = True
-            
+
     except ValueError:
         print('validate error (%s)' % value)
 
@@ -202,7 +202,18 @@ def json_serial(obj):
     # 日付型の場合には、文字列に変換します
     if isinstance(obj,datetime.datetime):
         # return obj.isoformat()
-        
+
         return obj.strftime(JSON_DATETIME_FORMAT)
     # 上記以外はサポート対象外.
     raise TypeError ("Type %s not serializable" % type(obj))
+
+# --------------------------------------------------
+# ファイルを読み込みJson形式へパースして返却
+# query_file_path(str)　: 入力値
+# encoding(str)　       : エンコード
+# --------------------------------------------------
+def readFileToJson(query_file_path, enc="utf-8_sig"):
+
+    f = open(query_file_path, 'r', encoding=enc)
+    return json.load(f)
+

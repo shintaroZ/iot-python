@@ -10,11 +10,6 @@ import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
 
-def createEvent(query_file_path):
-    f = open(query_file_path, 'r')
-    return json.load(f)
-
-
 class LambdaFunctionTest(unittest.TestCase):
 
     RDS = None
@@ -35,17 +30,62 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
     # ----------------------------------------------------------------------
-    #　データあり
+    #　削除回数0
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
 
+        event = initCommon.readFileToJson('test/function/input001.json')
+
+
+        # 予め更新
+        RDS.execute(initCommon.getQuery("test/sql/delete.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "whereDeleteCount" : 0})
+        RDS.execute(initCommon.getQuery("test/sql/update.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "whereDeleteCount" : 1
+                     ,  "deleteCount" : 0})
+        RDS.commit()
+
         # 実行
-        event = createEvent('test/function/input001.json')
-        result = lambda_function.lambda_handler(event, None)
-        
-        print ("================ result ================")
-        print (result)
+        lambda_function.lambda_handler(event, None)
+
+        result = RDS.fetchone(initCommon.getQuery("test/sql/findbyId.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "deleteCount" : 1})
+        self.assertEqual(result["deleteCount"], 1)
+    # ----------------------------------------------------------------------
+    #　1 < 削除回数
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_001(self):
+        print("---test_lambda_handler_001---")
+
+        event = initCommon.readFileToJson('test/function/input002.json')
 
 
+        # 予め更新
+        RDS.execute(initCommon.getQuery("test/sql/delete.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "whereDeleteCount" : 0})
+        RDS.execute(initCommon.getQuery("test/sql/update.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "whereDeleteCount" : 2
+                     ,  "deleteCount" : 0})
+        RDS.commit()
+
+        # 実行
+        lambda_function.lambda_handler(event, None)
+
+
+        result = RDS.fetchone(initCommon.getQuery("test/sql/findbyId.sql"),
+                    {
+                        "mailSendId" : event["mailSendId"]
+                     ,  "deleteCount" : 2})
+        self.assertEqual(result["deleteCount"], 2)
 

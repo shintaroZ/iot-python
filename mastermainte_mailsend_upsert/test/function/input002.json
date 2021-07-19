@@ -1,29 +1,11 @@
 {
 	"clientName": "eg-iot-develop",
-	"deviceId": "700400014-F6CA332A",
-	"sensorId": "s1003",
-	"sensorName": "温度 〈センサ3〉",
-	"sensorUnit": "℃",
-	"collectionValueType": 0,
-	"collectionType": 1,
-	"revisionMagnification": 0.01,
-	"savingFlg": 0,
-	"limitCheckFlg": 1,
-	"limitCountType": 1,
-	"limitCount": 5,
-	"limitCountResetRange": 3,
-	"actionRange": 2,
-	"nextAction": 1,
-	"limitRecords": [
-		{
-			"limitSubNo": 1,
-			"limitJudgeType": 2,
-			"limitValue": -12
-		},
-		{
-			"limitSubNo": 2,
-			"limitJudgeType": 0,
-			"limitValue": 7
-		}
-	]
+	"mailSendId": 3,
+	"emailAddress": "ccc@email.co.jp",
+	"sendWeekType": 0,
+	"sendFrequancy": 1,
+	"sendTimeFrom": "100000",
+	"sendTimeTo": "190000",
+	"mailSubject": "テスト件名1",
+	"mailText": "メール本文1********************"
 }

@@ -10,11 +10,6 @@ import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
 
-def createEvent(query_file_path):
-    f = open(query_file_path, 'r')
-    return json.load(f)
-
-
 class LambdaFunctionTest(unittest.TestCase):
 
     RDS = None
@@ -39,12 +34,12 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
-        event = createEvent('test/function/input001.json')
+        event = initCommon.readFileToJson('test/function/input001.json')
 
         # 事前にマスタ削除
-        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
-        
+
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
             limitCheckSeq = result["limitCheckSeq"]
@@ -54,21 +49,56 @@ class LambdaFunctionTest(unittest.TestCase):
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
             RDS.commit()
-            
+
         # 実行
         lambda_function.lambda_handler(event, None)
+
+        # assert用にselect
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        dcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_data_collection/find.sql"))
+        lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
+
+        self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
+        self.assertEqual(result[0]["limitCheckSeq"], lcSeqResult["seqNo"])
+
+        self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
+        self.assertEqual(result[0]["sensorId"], "s1001")
+        self.assertEqual(result[0]["sensorName"], "温度 〈センサ1〉")
+        self.assertEqual(result[0]["sensorUnit"], "℃")
+        self.assertEqual(result[0]["statusTrue"], "")
+        self.assertEqual(result[0]["statusFalse"], "")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.01)
+        self.assertEqual(result[0]["xCoordinate"], 1234.56)
+        self.assertEqual(result[0]["yCoordinate"], 2345.67)
+        self.assertEqual(result[0]["savingFlg"], 0)
+        self.assertEqual(result[0]["limitCheckFlg"], 1)
+        self.assertEqual(result[0]["limitCountType"], 1)
+        self.assertEqual(result[0]["limitCount"], 5)
+        self.assertEqual(result[0]["limitCountResetRange"], 3)
+        self.assertEqual(result[0]["actionRange"], 2)
+        self.assertEqual(result[0]["nextAction"], 1)
+        self.assertEqual(result[0]["limitSubNo"], 1)
+        self.assertEqual(result[0]["limitJudgeType"], 2)
+        self.assertEqual(result[0]["limitValue"], -12)
+        self.assertEqual(result[1]["limitSubNo"], 2)
+        self.assertEqual(result[1]["limitJudgeType"], 0)
+        self.assertEqual(result[1]["limitValue"], 7)
 
     # ----------------------------------------------------------------------
     # データ定義マスタの項目なしの新規
     # ----------------------------------------------------------------------
     def test_lambda_handler_002(self):
         print("---test_lambda_handler_002---")
-        event = createEvent('test/function/input002.json')
+        event = initCommon.readFileToJson('test/function/input002.json')
 
         # 事前にマスタ削除
-        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
-        
+
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
             limitCheckSeq = result["limitCheckSeq"]
@@ -78,16 +108,16 @@ class LambdaFunctionTest(unittest.TestCase):
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
             RDS.commit()
-            
+
         # 実行
         lambda_function.lambda_handler(event, None)
-        
-        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
-        
+
         dcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_data_collection/find.sql"))
         lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
-                                   
+
 
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1003")
@@ -115,7 +145,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[1]["limitSubNo"], 2)
         self.assertEqual(result[1]["limitJudgeType"], 0)
         self.assertEqual(result[1]["limitValue"], 7)
-        
+
         print (result)
 
     # ----------------------------------------------------------------------
@@ -123,12 +153,12 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_lambda_handler_003(self):
         print("---test_lambda_handler_003---")
-        event = createEvent('test/function/input003.json')
+        event = initCommon.readFileToJson('test/function/input003.json')
 
         # 事前にマスタ削除
-        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
-        
+
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
             limitCheckSeq = result["limitCheckSeq"]
@@ -138,62 +168,122 @@ class LambdaFunctionTest(unittest.TestCase):
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
             RDS.commit()
-            
+
         # 実行
         lambda_function.lambda_handler(event, None)
-        
-        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+
+        self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
+        self.assertEqual(result[0]["sensorId"], "s1004")
+        self.assertEqual(result[0]["sensorName"], "温度 〈センサ4〉")
+        self.assertEqual(result[0]["sensorUnit"], "℃")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.01)
+        self.assertEqual(result[0]["savingFlg"], 0)
         print (result)
-        
+
     # ----------------------------------------------------------------------
     # 全項目ありの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_004(self):
         print("---test_lambda_handler_004---")
-        event = createEvent('test/function/input004.json')
+        event = initCommon.readFileToJson('test/function/input004.json')
 
         # 実行
         lambda_function.lambda_handler(event, None)
-        
-        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+        self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
+        self.assertEqual(result[0]["sensorId"], "s1001")
+        self.assertEqual(result[0]["sensorName"], "温度 〈センサ1〉")
+        self.assertEqual(result[0]["sensorUnit"], "℃")
+        self.assertEqual(result[0]["statusTrue"], "")
+        self.assertEqual(result[0]["statusFalse"], "")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.1)
+        self.assertEqual(result[0]["savingFlg"], 0)
+        self.assertEqual(result[0]["limitCheckFlg"], 1)
+        self.assertEqual(result[0]["limitCountType"], 1)
+        self.assertEqual(result[0]["limitCount"], 5)
+        self.assertEqual(result[0]["limitCountResetRange"], 3)
+        self.assertEqual(result[0]["actionRange"], 2)
+        self.assertEqual(result[0]["nextAction"], 1)
+        self.assertEqual(result[0]["limitSubNo"], 1)
+        self.assertEqual(result[0]["limitJudgeType"], 2)
+        self.assertEqual(result[0]["limitValue"], -12)
+        self.assertEqual(result[1]["limitSubNo"], 2)
+        self.assertEqual(result[1]["limitJudgeType"], 0)
+        self.assertEqual(result[1]["limitValue"], 7)
         print (result)
-        
+
     # ----------------------------------------------------------------------
     # データ定義マスタの項目なしの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_005(self):
         print("---test_lambda_handler_005---")
-        event = createEvent('test/function/input005.json')
+        event = initCommon.readFileToJson('test/function/input005.json')
 
         # 実行
         lambda_function.lambda_handler(event, None)
-        
-        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+
+        self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
+        self.assertEqual(result[0]["sensorId"], "s1003")
+        self.assertEqual(result[0]["sensorName"], "温度 〈センサ3〉")
+        self.assertEqual(result[0]["sensorUnit"], "℃")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.01)
+        self.assertEqual(result[0]["savingFlg"], 0)
+        self.assertEqual(result[0]["limitCheckFlg"], 1)
+        self.assertEqual(result[0]["limitCountType"], 1)
+        self.assertEqual(result[0]["limitCount"], 5)
+        self.assertEqual(result[0]["limitCountResetRange"], 3)
+        self.assertEqual(result[0]["actionRange"], 2)
+        self.assertEqual(result[0]["nextAction"], 1)
+        self.assertEqual(result[0]["limitSubNo"], 1)
+        self.assertEqual(result[0]["limitJudgeType"], 2)
+        self.assertEqual(result[0]["limitValue"], -12)
+        self.assertEqual(result[1]["limitSubNo"], 2)
+        self.assertEqual(result[1]["limitJudgeType"], 0)
+        self.assertEqual(result[1]["limitValue"], 9)
         print (result)
-        
+
     # ----------------------------------------------------------------------
     # 閾値なしの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_006(self):
         print("---test_lambda_handler_006---")
-        event = createEvent('test/function/input006.json')
+        event = initCommon.readFileToJson('test/function/input006.json')
 
         # 実行
         lambda_function.lambda_handler(event, None)
-        
-        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"), 
+
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+        self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
+        self.assertEqual(result[0]["sensorId"], "s1004")
+        self.assertEqual(result[0]["sensorName"], "温度 〈センサ4〉")
+        self.assertEqual(result[0]["sensorUnit"], "℃")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.01)
+        self.assertEqual(result[0]["savingFlg"], 1)
         print (result)
-       
+
     # ----------------------------------------------------------------------
     # データ定義マスタの必須項目なし
     # ----------------------------------------------------------------------
     def test_lambda_handler_007(self):
         print("---test_lambda_handler_007---")
-        event = createEvent('test/function/input007.json')
+        event = initCommon.readFileToJson('test/function/input007.json')
 
         isException = False
         try:
@@ -202,13 +292,13 @@ class LambdaFunctionTest(unittest.TestCase):
             print(ex)
             isException = True
         self.assertEqual(isException, True)
-        
+
     # ----------------------------------------------------------------------
     # 閾値マスタの歯抜けあり
     # ----------------------------------------------------------------------
     def test_lambda_handler_008(self):
         print("---test_lambda_handler_008---")
-        event = createEvent('test/function/input008.json')
+        event = initCommon.readFileToJson('test/function/input008.json')
 
         isException = False
         try:
@@ -217,13 +307,13 @@ class LambdaFunctionTest(unittest.TestCase):
             print(ex)
             isException = True
         self.assertEqual(isException, True)
-        
+
     # ----------------------------------------------------------------------
     # データ型不正
     # ----------------------------------------------------------------------
     def test_lambda_handler_009(self):
         print("---test_lambda_handler_009---")
-        event = createEvent('test/function/input009.json')
+        event = initCommon.readFileToJson('test/function/input009.json')
 
         isException = False
         try:
@@ -237,7 +327,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_lambda_handler_010(self):
         print("---test_lambda_handler_010---")
-        event = createEvent('test/function/input010.json')
+        event = initCommon.readFileToJson('test/function/input010.json')
 
         isException = False
         try:

@@ -145,13 +145,13 @@ def createWhereParam(event):
         whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
     if "sensorId" in event:
         whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
-    
+
     if 0 < len(whereArray):
         whereStr = " ".join(whereArray)
-    
+
     return {"p_whereParams" : whereStr}
-    
-    
+
+
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
@@ -177,7 +177,8 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
+#     setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ削除開始 : %s' % event)
 
@@ -187,10 +188,10 @@ def lambda_handler(event, context):
     # マスタselect
     result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
                           , createWhereParam(event))
-    
+
     # 削除回数
     deleteCount = 1 if result is None else result[DELETE_COUNT] + 1
-    
+
     try:
         # データ定義マスタの論理削除
         LOGGER.info("データ定義マスタの論理削除 [%s, %s, %d]" % (event[DEVICE_ID], event[SENSOR_ID], deleteCount) )
@@ -200,10 +201,10 @@ def lambda_handler(event, context):
         LOGGER.error("削除に失敗しました。ロールバックします。")
         rds.rollBack()
         raise ex
-    
+
     # commit
     rds.commit()
-    
+
     # close
     del rds
-    
+
