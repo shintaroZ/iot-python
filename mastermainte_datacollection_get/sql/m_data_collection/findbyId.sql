@@ -58,7 +58,9 @@ from
 	left outer join M_LIMIT ml 
 	    on ml.LIMIT_CHECK_SEQ = mlc.LIMIT_CHECK_SEQ
 
-%(p_whereParams)s	    
+where
+	mdc.DELETE_COUNT = 0
+	%(p_whereParams)s
 
 order by
 	mdc.DEVICE_ID 

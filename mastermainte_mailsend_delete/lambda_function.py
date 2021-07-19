@@ -20,34 +20,15 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
-CLIENT_NAME = "clientName"
-DEVICE_ID = "deviceId"
+MAIL_SEND_ID = "mailSendId"
 DELETE_COUNT = "deleteCount"
-SENSOR_ID = "sensorId"
-DATA_COLLECTION_SEQ = "dataCollectionSeq"
-SENSOR_NAME = "sensorName"
-SENSOR_UNIT = "sensorUnit"
-STATUS_TRUE = "statusTrue"
-STATUS_FALSE = "statusFalse"
-COLLECTION_VALUE_TYPE = "collectionValueType"
-COLLECTION_TYPE = "collectionType"
-REVISION_MAGNIFICATION = "revisionMagnification"
-X_COORDINATE = "xCoordinate"
-Y_COORDINATE = "yCoordinate"
-SAVING_FLG = "savingFlg"
-LIMIT_CHECK_FLG = "limitCheckFlg"
-
-LIMIT_CHECK_SEQ = "limitCheckSeq"
-LIMIT_COUNT_TYPE = "limitCountType"
-LIMIT_COUNT = "limitCount"
-LIMIT_COUNT_RESET_RANGE = "limitCountResetRange"
-ACTION_RANGE = "actionRange"
-NEXT_ACTION = "nextAction"
-
-LIMIT_RECORDS = "limitRecords"
-LIMIT_SUB_NO = "limitSubNo"
-LIMIT_JUDGE_TYPE = "limitJudgeType"
-LIMIT_VALUE = "limitValue"
+EMAIL_ADDRESS = "emailAddress"
+SEND_WEEK_TYPE = "sendWeekType"
+SEND_FREQUANCY = "sendFrequancy"
+SEND_TIME_FROM = "sendTimeFrom"
+SEND_TIME_TO = "sendTimeTo"
+MAIL_SUBJECT = "mailSubject"
+MAIL_TEXT = "mailText"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -108,6 +89,8 @@ def setRetryInterval(retryInterval):
     global RETRY_INTERVAL
     RETRY_INTERVAL = int(retryInterval)
 
+
+
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -133,25 +116,6 @@ def initConfig(clientName):
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
 
-
-# --------------------------------------------------
-# データ定義マスタ参照の可変パラメータ作成
-# --------------------------------------------------
-def createWhereParam(event):
-
-    whereStr = ""
-    whereArray = []
-    if "deviceId" in event:
-        whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
-    if "sensorId" in event:
-        whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
-    
-    if 0 < len(whereArray):
-        whereStr = " ".join(whereArray)
-    
-    return {"p_whereParams" : whereStr}
-    
-    
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
@@ -177,25 +141,24 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
-    LOGGER.info('マスタメンテナンス機能_データ定義マスタ削除開始 : %s' % event)
+    LOGGER.info('マスタメンテナンス機能_メール通知マスタ削除開始 : %s' % event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
     # マスタselect
-    result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
-                          , createWhereParam(event))
+    result = rds.fetchone(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
+                          , {MAIL_SEND_ID : event[MAIL_SEND_ID]})
     
     # 削除回数
     deleteCount = 1 if result is None else result[DELETE_COUNT] + 1
-    
     try:
-        # データ定義マスタの論理削除
-        LOGGER.info("データ定義マスタの論理削除 [%s, %s, %d]" % (event[DEVICE_ID], event[SENSOR_ID], deleteCount) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/update.sql"), createDeleteCountParams(event, deleteCount))
-
+        # メール通知マスタの論理削除
+        LOGGER.info("メール通知マスタの論理削除 [%d, %d]" % (event[MAIL_SEND_ID], deleteCount))
+        rds.execute(initCommon.getQuery("sql/m_mail_send/update.sql"), createDeleteCountParams(event, deleteCount))
+ 
     except Exception as ex:
         LOGGER.error("削除に失敗しました。ロールバックします。")
         rds.rollBack()

@@ -23,6 +23,7 @@ IS_LIMIT = False
 # カラム名定数
 CLIENT_NAME = "clientName"
 DEVICE_ID = "deviceId"
+DELETE_COUNT = "deleteCount"
 SENSOR_ID = "sensorId"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
 SENSOR_NAME = "sensorName"
@@ -260,15 +261,15 @@ def createWhereParam(event):
     whereStr = ""
     whereArray = []
     if "deviceId" in event:
-        whereArray.append("mdc.DEVICE_ID = '%s'" % event["deviceId"])
+        whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
     if "sensorId" in event:
-        whereArray.append("mdc.SENSOR_ID = '%s'" % event["sensorId"])
+        whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
     
     if 0 < len(whereArray):
-        whereStr = "where " + " AND ".join(whereArray)
+        whereStr = " ".join(whereArray)
     
     return {"p_whereParams" : whereStr}
-
+    
 # --------------------------------------------------
 # 起動パラメータにデータ定義マスタ用のパラメータを付与して返却する。
 # --------------------------------------------------

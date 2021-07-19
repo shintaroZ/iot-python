@@ -237,12 +237,12 @@ def createWhereParam(event):
     whereStr = ""
     whereArray = []
     if "deviceId" in event:
-        whereArray.append("mdc.DEVICE_ID = '%s'" % event["deviceId"])
+        whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
     if "sensorId" in event:
-        whereArray.append("mdc.SENSOR_ID = '%s'" % event["sensorId"])
+        whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
     
     if 0 < len(whereArray):
-        whereStr = "where " + " AND ".join(whereArray)
+        whereStr = " ".join(whereArray)
     
     return {"p_whereParams" : whereStr}
     
@@ -255,7 +255,7 @@ def lambda_handler(event, context):
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
 
-    LOGGER.info('マスタメンテナンス機能_データ定義一覧参照開始 : %s' % event)
+    LOGGER.info('マスタメンテナンス機能_データ定義マスタ参照開始 : %s' % event)
 
     # 入力チェック
     isArgument(event)

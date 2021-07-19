@@ -20,34 +20,14 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
-CLIENT_NAME = "clientName"
-DEVICE_ID = "deviceId"
-DELETE_COUNT = "deleteCount"
-SENSOR_ID = "sensorId"
-DATA_COLLECTION_SEQ = "dataCollectionSeq"
-SENSOR_NAME = "sensorName"
-SENSOR_UNIT = "sensorUnit"
-STATUS_TRUE = "statusTrue"
-STATUS_FALSE = "statusFalse"
-COLLECTION_VALUE_TYPE = "collectionValueType"
-COLLECTION_TYPE = "collectionType"
-REVISION_MAGNIFICATION = "revisionMagnification"
-X_COORDINATE = "xCoordinate"
-Y_COORDINATE = "yCoordinate"
-SAVING_FLG = "savingFlg"
-LIMIT_CHECK_FLG = "limitCheckFlg"
-
-LIMIT_CHECK_SEQ = "limitCheckSeq"
-LIMIT_COUNT_TYPE = "limitCountType"
-LIMIT_COUNT = "limitCount"
-LIMIT_COUNT_RESET_RANGE = "limitCountResetRange"
-ACTION_RANGE = "actionRange"
-NEXT_ACTION = "nextAction"
-
-LIMIT_RECORDS = "limitRecords"
-LIMIT_SUB_NO = "limitSubNo"
-LIMIT_JUDGE_TYPE = "limitJudgeType"
-LIMIT_VALUE = "limitValue"
+MAIL_SEND_ID = "mailSendId"
+EMAIL_ADDRESS = "emailAddress"
+SEND_WEEK_TYPE = "sendWeekType"
+SEND_FREQUANCY = "sendFrequancy"
+SEND_TIME_FROM = "sendTimeFrom"
+SEND_TIME_TO = "sendTimeTo"
+MAIL_SUBJECT = "mailSubject"
+MAIL_TEXT = "mailText"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -108,6 +88,7 @@ def setRetryInterval(retryInterval):
     global RETRY_INTERVAL
     RETRY_INTERVAL = int(retryInterval)
 
+
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -135,30 +116,55 @@ def initConfig(clientName):
 
 
 # --------------------------------------------------
-# データ定義マスタ参照の可変パラメータ作成
+# 起動パラメータチェック
 # --------------------------------------------------
-def createWhereParam(event):
+def isArgument(event):
 
-    whereStr = ""
-    whereArray = []
-    if "deviceId" in event:
-        whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
-    if "sensorId" in event:
-        whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
+    # 必須項目チェック
+    noneErrArray = []
+    noneErrArray.append(MAIL_SEND_ID) if (MAIL_SEND_ID not in event) else 0
+    noneErrArray.append(EMAIL_ADDRESS)if (EMAIL_ADDRESS not in event) else 0
+    noneErrArray.append(SEND_WEEK_TYPE) if (SEND_WEEK_TYPE not in event) else 0
+    noneErrArray.append(SEND_FREQUANCY) if (SEND_FREQUANCY not in event) else 0
+    noneErrArray.append(SEND_TIME_FROM) if (SEND_TIME_FROM not in event) else 0
+    noneErrArray.append(SEND_TIME_TO) if (SEND_TIME_TO not in event) else 0
+    noneErrArray.append(MAIL_SUBJECT) if (MAIL_SUBJECT not in event) else 0
+    noneErrArray.append(MAIL_TEXT) if (MAIL_TEXT not in event) else 0
     
-    if 0 < len(whereArray):
-        whereStr = " ".join(whereArray)
+    # 必須項目がない場合は例外スロー
+    if 0 < len(noneErrArray):
+        raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
     
-    return {"p_whereParams" : whereStr}
-    
-    
-# --------------------------------------------------
-# 起動パラメータに共通情報を付与して返却する。
-# --------------------------------------------------
-def createDeleteCountParams(event, deleteCount):
+    # 型チェック
+    typeErrArray = []
+    typeErrArray.append(MAIL_SEND_ID) if (initCommon.isValidateNumber(event[MAIL_SEND_ID]) == False) else 0
+    typeErrArray.append(SEND_WEEK_TYPE) if (initCommon.isValidateNumber(event[SEND_WEEK_TYPE]) == False) else 0
+    typeErrArray.append(SEND_FREQUANCY) if (initCommon.isValidateNumber(event[SEND_FREQUANCY]) == False) else 0
 
-    event[DELETE_COUNT] = deleteCount
-    return createCommonParams(event)
+    # 型異常の場合は例外スロー
+    if 0 < len(typeErrArray):
+        raise TypeError("The parameters is type invalid. [%s]" % ",".join(typeErrArray))
+    
+    # メール通知IDの範囲チェック
+    rangeArray = []
+    rangeArray.append(MAIL_SEND_ID) if(5 < event[MAIL_SEND_ID] or event[MAIL_SEND_ID] < 1) else 0
+        
+    # 閾値項目が歯抜けの場合は例外スロー
+    if 0 < len(rangeArray):
+        raise Exception("The parameters is range invalid. [%s]" % ",".join(rangeArray))
+        
+    # データ長チェック
+    lengthArray = []
+    lengthArray.append(EMAIL_ADDRESS) if (256 < len(event[EMAIL_ADDRESS])) else 0
+    lengthArray.append(SEND_TIME_FROM) if (6 < len(event[SEND_TIME_FROM])) else 0
+    lengthArray.append(SEND_TIME_TO) if (6 < len(event[SEND_TIME_TO])) else 0
+    lengthArray.append(MAIL_SUBJECT) if (30 < len(event[MAIL_SUBJECT])) else 0
+    
+    # データ長異常の場合は例外スロー
+    if 0 < len(lengthArray):
+        raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
+    
+    return
 
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
@@ -170,6 +176,7 @@ def createCommonParams(event):
     event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
     return event
 
+    
 #####################
 # main
 #####################
@@ -179,25 +186,20 @@ def lambda_handler(event, context):
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger("DEBUG"))
 
-    LOGGER.info('マスタメンテナンス機能_データ定義マスタ削除開始 : %s' % event)
+    LOGGER.info('マスタメンテナンス機能_メール通知マスタ更新開始 : %s' % event)
 
+    # 入力チェック
+    isArgument(event)
+    
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
-
-    # マスタselect
-    result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
-                          , createWhereParam(event))
-    
-    # 削除回数
-    deleteCount = 1 if result is None else result[DELETE_COUNT] + 1
     
     try:
-        # データ定義マスタの論理削除
-        LOGGER.info("データ定義マスタの論理削除 [%s, %s, %d]" % (event[DEVICE_ID], event[SENSOR_ID], deleteCount) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/update.sql"), createDeleteCountParams(event, deleteCount))
-
+        # メール通知マスタのUPSERT
+        LOGGER.info("メール通知マスタのUPSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
+        rds.execute(initCommon.getQuery("sql/m_mail_send/upsert.sql"), createCommonParams(event) )
     except Exception as ex:
-        LOGGER.error("削除に失敗しました。ロールバックします。")
+        LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()
         raise ex
     

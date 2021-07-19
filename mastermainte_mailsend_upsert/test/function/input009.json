@@ -1,0 +1,33 @@
+{
+	"clientName": "eg-iot-develop",
+	"deviceId": "700400014-F6CA332A",
+	"sensorId": "s1001",
+	"sensorName": "温度 〈センサ1〉",
+	"sensorUnit": "℃",
+	"statusTrue": "",
+	"statusFalse": "",
+	"collectionValueType": "xxxx",
+	"collectionType": "xxxx",
+	"revisionMagnification": "xxxx",
+	"xCoordinate": "xxxx",
+	"yCoordinate": "xxxx",
+	"savingFlg": "xxxx",
+	"limitCheckFlg": "xxxx",
+	"limitCountType": "xxxx",
+	"limitCount": "xxxx",
+	"limitCountResetRange": "xxxx",
+	"actionRange": "xxxx",
+	"nextAction": "xxxx",
+	"limitRecords": [
+		{
+			"limitSubNo": 1,
+			"limitJudgeType": 2,
+			"limitValue": -12
+		},
+		{
+			"limitSubNo": "xxxx",
+			"limitJudgeType": "xxxx",
+			"limitValue": "xxxx"
+		}
+	]
+}
