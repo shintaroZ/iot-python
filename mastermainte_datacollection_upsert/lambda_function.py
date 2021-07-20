@@ -141,21 +141,22 @@ def initConfig(clientName):
         raise(e)
 
 
+
 # --------------------------------------------------
 # 起動パラメータチェック
 # --------------------------------------------------
-def isArgument(event):
+def isArgument(eBody):
 
     # 必須項目チェック
     noneErrArray = []
-    noneErrArray.append(CLIENT_NAME) if (CLIENT_NAME not in event) else 0
-    noneErrArray.append(DEVICE_ID)if (DEVICE_ID not in event) else 0
-    noneErrArray.append(SENSOR_ID) if (SENSOR_ID not in event) else 0
-    noneErrArray.append(SENSOR_NAME) if (SENSOR_NAME not in event) else 0
-    noneErrArray.append(COLLECTION_VALUE_TYPE) if (COLLECTION_VALUE_TYPE not in event) else 0
-    noneErrArray.append(COLLECTION_TYPE) if (COLLECTION_TYPE not in event) else 0
-    noneErrArray.append(SAVING_FLG) if (SAVING_FLG not in event) else 0
-    noneErrArray.append(LIMIT_CHECK_FLG) if (LIMIT_CHECK_FLG not in event) else 0
+    # noneErrArray.append(CLIENT_NAME) if (CLIENT_NAME not in eBody) else 0
+    # noneErrArray.append(DEVICE_ID)if (DEVICE_ID not in eBody) else 0
+    # noneErrArray.append(SENSOR_ID) if (SENSOR_ID not in eBody) else 0
+    noneErrArray.append(SENSOR_NAME) if (SENSOR_NAME not in eBody) else 0
+    noneErrArray.append(COLLECTION_VALUE_TYPE) if (COLLECTION_VALUE_TYPE not in eBody) else 0
+    noneErrArray.append(COLLECTION_TYPE) if (COLLECTION_TYPE not in eBody) else 0
+    noneErrArray.append(SAVING_FLG) if (SAVING_FLG not in eBody) else 0
+    noneErrArray.append(LIMIT_CHECK_FLG) if (LIMIT_CHECK_FLG not in eBody) else 0
     
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
@@ -163,21 +164,21 @@ def isArgument(event):
     
     # 型チェック
     typeErrArray = []
-    typeErrArray.append(COLLECTION_VALUE_TYPE) if (initCommon.isValidateNumber(event[COLLECTION_VALUE_TYPE]) == False) else 0
-    typeErrArray.append(COLLECTION_TYPE) if (initCommon.isValidateNumber(event[COLLECTION_TYPE]) == False) else 0
-    typeErrArray.append(REVISION_MAGNIFICATION) if (REVISION_MAGNIFICATION in event and initCommon.isValidateFloat(event[REVISION_MAGNIFICATION]) == False) else 0
-    typeErrArray.append(X_COORDINATE) if (X_COORDINATE in event and initCommon.isValidateFloat(event[X_COORDINATE]) == False) else 0
-    typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in event and initCommon.isValidateFloat(event[Y_COORDINATE]) == False) else 0
-    typeErrArray.append(SAVING_FLG) if (initCommon.isValidateNumber(event[SAVING_FLG]) == False) else 0
-    typeErrArray.append(LIMIT_CHECK_FLG) if (initCommon.isValidateNumber(event[LIMIT_CHECK_FLG]) == False) else 0
-    typeErrArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and initCommon.isValidateNumber(event[LIMIT_COUNT_TYPE]) == False) else 0
-    typeErrArray.append(LIMIT_COUNT) if (LIMIT_COUNT in event and initCommon.isValidateNumber(event[LIMIT_COUNT]) == False) else 0
-    typeErrArray.append(LIMIT_COUNT_RESET_RANGE) if(LIMIT_COUNT_RESET_RANGE in event and initCommon.isValidateNumber(event[LIMIT_COUNT_RESET_RANGE]) == False) else 0
-    typeErrArray.append(ACTION_RANGE) if (ACTION_RANGE in event and initCommon.isValidateNumber(event[ACTION_RANGE]) == False) else 0
-    typeErrArray.append(NEXT_ACTION) if (NEXT_ACTION in event and initCommon.isValidateNumber(event[NEXT_ACTION]) == False) else 0
+    typeErrArray.append(COLLECTION_VALUE_TYPE) if (initCommon.isValidateNumber(eBody[COLLECTION_VALUE_TYPE]) == False) else 0
+    typeErrArray.append(COLLECTION_TYPE) if (initCommon.isValidateNumber(eBody[COLLECTION_TYPE]) == False) else 0
+    typeErrArray.append(REVISION_MAGNIFICATION) if (REVISION_MAGNIFICATION in eBody and initCommon.isValidateFloat(eBody[REVISION_MAGNIFICATION]) == False) else 0
+    typeErrArray.append(X_COORDINATE) if (X_COORDINATE in eBody and initCommon.isValidateFloat(eBody[X_COORDINATE]) == False) else 0
+    typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in eBody and initCommon.isValidateFloat(eBody[Y_COORDINATE]) == False) else 0
+    typeErrArray.append(SAVING_FLG) if (initCommon.isValidateNumber(eBody[SAVING_FLG]) == False) else 0
+    typeErrArray.append(LIMIT_CHECK_FLG) if (initCommon.isValidateNumber(eBody[LIMIT_CHECK_FLG]) == False) else 0
+    typeErrArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and initCommon.isValidateNumber(eBody[LIMIT_COUNT_TYPE]) == False) else 0
+    typeErrArray.append(LIMIT_COUNT) if (LIMIT_COUNT in eBody and initCommon.isValidateNumber(eBody[LIMIT_COUNT]) == False) else 0
+    typeErrArray.append(LIMIT_COUNT_RESET_RANGE) if(LIMIT_COUNT_RESET_RANGE in eBody and initCommon.isValidateNumber(eBody[LIMIT_COUNT_RESET_RANGE]) == False) else 0
+    typeErrArray.append(ACTION_RANGE) if (ACTION_RANGE in eBody and initCommon.isValidateNumber(eBody[ACTION_RANGE]) == False) else 0
+    typeErrArray.append(NEXT_ACTION) if (NEXT_ACTION in eBody and initCommon.isValidateNumber(eBody[NEXT_ACTION]) == False) else 0
        
-    if LIMIT_RECORDS in event:
-        for r in event[LIMIT_RECORDS]:
+    if LIMIT_RECORDS in eBody:
+        for r in eBody[LIMIT_RECORDS]:
             typeErrArray.append(LIMIT_SUB_NO) if (LIMIT_SUB_NO in r and initCommon.isValidateNumber(r[LIMIT_SUB_NO]) == False) else 0
             typeErrArray.append(LIMIT_JUDGE_TYPE) if (LIMIT_JUDGE_TYPE in r and initCommon.isValidateNumber(r[LIMIT_JUDGE_TYPE]) == False) else 0
             typeErrArray.append(LIMIT_VALUE) if (LIMIT_VALUE in r and initCommon.isValidateNumber(r[LIMIT_VALUE]) == False) else 0
@@ -193,15 +194,15 @@ def isArgument(event):
     limitArray = [LIMIT_COUNT_TYPE, LIMIT_COUNT, LIMIT_COUNT_RESET_RANGE, ACTION_RANGE, NEXT_ACTION]
     limitChildArray = []
     setIsLimit(False)
-    limitArray.remove(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event) else 0
-    limitArray.remove(LIMIT_COUNT) if (LIMIT_COUNT in event) else 0
-    limitArray.remove(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in event) else 0
-    limitArray.remove(ACTION_RANGE) if (ACTION_RANGE in event) else 0
-    limitArray.remove(NEXT_ACTION) if (NEXT_ACTION in event) else 0
+    limitArray.remove(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody) else 0
+    limitArray.remove(LIMIT_COUNT) if (LIMIT_COUNT in eBody) else 0
+    limitArray.remove(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in eBody) else 0
+    limitArray.remove(ACTION_RANGE) if (ACTION_RANGE in eBody) else 0
+    limitArray.remove(NEXT_ACTION) if (NEXT_ACTION in eBody) else 0
     limitArray.clear() if len(limitArray) == 5 else setIsLimit(True)
     
-    if LIMIT_RECORDS in event:
-        for r in event[LIMIT_RECORDS]:
+    if LIMIT_RECORDS in eBody:
+        for r in eBody[LIMIT_RECORDS]:
             limitChildArray = [LIMIT_SUB_NO, LIMIT_JUDGE_TYPE, LIMIT_VALUE]
             limitChildArray.remove(LIMIT_SUB_NO) if (LIMIT_SUB_NO in r) else 0
             limitChildArray.remove(LIMIT_JUDGE_TYPE) if (LIMIT_JUDGE_TYPE in r) else 0
@@ -219,28 +220,28 @@ def isArgument(event):
         
     # データ長チェック
     lengthArray = []
-    lengthArray.append(DEVICE_ID) if (20 < len(event[DEVICE_ID])) else 0
-    lengthArray.append(SENSOR_ID) if (10 < len(event[SENSOR_ID])) else 0
-    lengthArray.append(SENSOR_NAME) if (30 < len(event[SENSOR_NAME])) else 0
-    lengthArray.append(SENSOR_UNIT) if (SENSOR_UNIT in event and 10 < len(event[SENSOR_UNIT])) else 0
-    lengthArray.append(STATUS_TRUE) if (STATUS_TRUE in event and 10 < len(event[STATUS_TRUE])) else 0
-    lengthArray.append(STATUS_FALSE) if (STATUS_FALSE in event and 10 < len(event[STATUS_FALSE])) else 0
-    lengthArray.append(COLLECTION_VALUE_TYPE) if (MAX_TYNYINT_UNSIGNED < event[COLLECTION_VALUE_TYPE]) else 0
-    lengthArray.append(COLLECTION_TYPE) if (MAX_SMALLINT_UNSIGNED < event[COLLECTION_TYPE]) else 0
-    lengthArray.append(SAVING_FLG) if (MAX_TYNYINT_UNSIGNED < event[SAVING_FLG]) else 0
-    lengthArray.append(LIMIT_CHECK_FLG) if (MAX_TYNYINT_UNSIGNED < event[LIMIT_CHECK_FLG]) else 0
+    # lengthArray.append(DEVICE_ID) if (20 < len(eBody[DEVICE_ID])) else 0
+    # lengthArray.append(SENSOR_ID) if (10 < len(eBody[SENSOR_ID])) else 0
+    lengthArray.append(SENSOR_NAME) if (30 < len(eBody[SENSOR_NAME])) else 0
+    lengthArray.append(SENSOR_UNIT) if (SENSOR_UNIT in eBody and 10 < len(eBody[SENSOR_UNIT])) else 0
+    lengthArray.append(STATUS_TRUE) if (STATUS_TRUE in eBody and 10 < len(eBody[STATUS_TRUE])) else 0
+    lengthArray.append(STATUS_FALSE) if (STATUS_FALSE in eBody and 10 < len(eBody[STATUS_FALSE])) else 0
+    lengthArray.append(COLLECTION_VALUE_TYPE) if (MAX_TYNYINT_UNSIGNED < eBody[COLLECTION_VALUE_TYPE]) else 0
+    lengthArray.append(COLLECTION_TYPE) if (MAX_SMALLINT_UNSIGNED < eBody[COLLECTION_TYPE]) else 0
+    lengthArray.append(SAVING_FLG) if (MAX_TYNYINT_UNSIGNED < eBody[SAVING_FLG]) else 0
+    lengthArray.append(LIMIT_CHECK_FLG) if (MAX_TYNYINT_UNSIGNED < eBody[LIMIT_CHECK_FLG]) else 0
 
-    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_TYNYINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
-    lengthArray.append(LIMIT_COUNT) if (LIMIT_COUNT in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT]) else 0
-    lengthArray.append(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_RESET_RANGE]) else 0
-    lengthArray.append(ACTION_RANGE) if (ACTION_RANGE in event and MAX_SMALLINT_UNSIGNED < event[ACTION_RANGE]) else 0
-    lengthArray.append(NEXT_ACTION) if (NEXT_ACTION in event and MAX_TYNYINT_UNSIGNED < event[NEXT_ACTION]) else 0
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and MAX_TYNYINT_UNSIGNED < eBody[LIMIT_COUNT_TYPE]) else 0
+    lengthArray.append(LIMIT_COUNT) if (LIMIT_COUNT in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT]) else 0
+    lengthArray.append(LIMIT_COUNT_RESET_RANGE) if (LIMIT_COUNT_RESET_RANGE in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT_RESET_RANGE]) else 0
+    lengthArray.append(ACTION_RANGE) if (ACTION_RANGE in eBody and MAX_SMALLINT_UNSIGNED < eBody[ACTION_RANGE]) else 0
+    lengthArray.append(NEXT_ACTION) if (NEXT_ACTION in eBody and MAX_TYNYINT_UNSIGNED < eBody[NEXT_ACTION]) else 0
 
-    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
-    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in event and MAX_SMALLINT_UNSIGNED < event[LIMIT_COUNT_TYPE]) else 0
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT_TYPE]) else 0
+    lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT_TYPE]) else 0
     
-    if LIMIT_RECORDS in event:
-        for r in event[LIMIT_RECORDS]:
+    if LIMIT_RECORDS in eBody:
+        for r in eBody[LIMIT_RECORDS]:
             lengthArray.append(LIMIT_SUB_NO) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_SUB_NO]) else 0
             lengthArray.append(LIMIT_JUDGE_TYPE) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_JUDGE_TYPE]) else 0
              
@@ -273,7 +274,7 @@ def createWhereParam(event):
 # --------------------------------------------------
 # 起動パラメータにデータ定義マスタ用のパラメータを付与して返却する。
 # --------------------------------------------------
-def createDataCollectionParams(event, result, version):
+def createDataCollectionParams(event, result, version, deviceId, sensorId):
     
     # 起動パラメータの必須判定
     # str項目
@@ -331,7 +332,9 @@ def createDataCollectionParams(event, result, version):
         event[Y_COORDINATE] = "NULL"
     else:
         event[Y_COORDINATE] = result[Y_COORDINATE]
-        
+    
+    event[DEVICE_ID] = deviceId
+    event[SENSOR_ID] = sensorId
         
     return createCommonParams(event, version)
 
@@ -359,15 +362,20 @@ def createCommonParams(event, version):
 # main
 #####################
 def lambda_handler(event, context):
+    print(event)
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger(LOG_LEVEL))
+    # setLogger(initCommon.getLogger(LOG_LEVEL))
+    setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
+    # body部
+    eBody = event["bodyRequest"]
+    
     # 入力チェック
-    isArgument(event)
+    isArgument(eBody)
     
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
@@ -404,21 +412,21 @@ def lambda_handler(event, context):
             # 閾値マスタのDELETE/INSERT
             LOGGER.info("閾値マスタのDELETE [limitCheckSeq = %d]" % limitCheckSeq)
             rds.execute(initCommon.getQuery("sql/m_limit/delete.sql"), {"limitCheckSeq" : limitCheckSeq })
-            for r in event[LIMIT_RECORDS]:
+            for r in eBody[LIMIT_RECORDS]:
                 LOGGER.info("閾値マスタのINSERT [%s]" % r)
                 rds.execute(initCommon.getQuery("sql/m_limit/insert.sql"), createLSeqParams(r, version, dataCollectionSeq, limitCheckSeq))
             
             # 閾値条件マスタのUPSERT
             LOGGER.info("閾値条件マスタのUPSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
-            rds.execute(initCommon.getQuery("sql/m_limit_check/upsert.sql"), createLSeqParams(event, version, dataCollectionSeq, limitCheckSeq))
+            rds.execute(initCommon.getQuery("sql/m_limit_check/upsert.sql"), createLSeqParams(eBody, version, dataCollectionSeq, limitCheckSeq))
         
         # 連携フラグマスタのUPSERT
         LOGGER.info("連携フラグマスタのUPSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
-        rds.execute(initCommon.getQuery("sql/m_link_flg/upsert.sql"), createLSeqParams(event, version, dataCollectionSeq, limitCheckSeq))
+        rds.execute(initCommon.getQuery("sql/m_link_flg/upsert.sql"), createLSeqParams(eBody, version, dataCollectionSeq, limitCheckSeq))
         
         # データ定義マスタのUPSERT
         LOGGER.info("データ定義マスタのUPSERT [%s, %s]" % (event[DEVICE_ID], event[SENSOR_ID]) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/upsert.sql"), createDataCollectionParams(event, result, version))
+        rds.execute(initCommon.getQuery("sql/m_data_collection/upsert.sql"), createDataCollectionParams(eBody, result, version,event[DEVICE_ID], event[SENSOR_ID]))
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()

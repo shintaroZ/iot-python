@@ -118,18 +118,18 @@ def initConfig(clientName):
 # --------------------------------------------------
 # 起動パラメータチェック
 # --------------------------------------------------
-def isArgument(event):
+def isArgument(eBody):
 
     # 必須項目チェック
     noneErrArray = []
-    noneErrArray.append(MAIL_SEND_ID) if (MAIL_SEND_ID not in event) else 0
-    noneErrArray.append(EMAIL_ADDRESS)if (EMAIL_ADDRESS not in event) else 0
-    noneErrArray.append(SEND_WEEK_TYPE) if (SEND_WEEK_TYPE not in event) else 0
-    noneErrArray.append(SEND_FREQUANCY) if (SEND_FREQUANCY not in event) else 0
-    noneErrArray.append(SEND_TIME_FROM) if (SEND_TIME_FROM not in event) else 0
-    noneErrArray.append(SEND_TIME_TO) if (SEND_TIME_TO not in event) else 0
-    noneErrArray.append(MAIL_SUBJECT) if (MAIL_SUBJECT not in event) else 0
-    noneErrArray.append(MAIL_TEXT) if (MAIL_TEXT not in event) else 0
+    # noneErrArray.append(MAIL_SEND_ID) if (MAIL_SEND_ID not in eBody) else 0
+    noneErrArray.append(EMAIL_ADDRESS)if (EMAIL_ADDRESS not in eBody) else 0
+    noneErrArray.append(SEND_WEEK_TYPE) if (SEND_WEEK_TYPE not in eBody) else 0
+    noneErrArray.append(SEND_FREQUANCY) if (SEND_FREQUANCY not in eBody) else 0
+    noneErrArray.append(SEND_TIME_FROM) if (SEND_TIME_FROM not in eBody) else 0
+    noneErrArray.append(SEND_TIME_TO) if (SEND_TIME_TO not in eBody) else 0
+    noneErrArray.append(MAIL_SUBJECT) if (MAIL_SUBJECT not in eBody) else 0
+    noneErrArray.append(MAIL_TEXT) if (MAIL_TEXT not in eBody) else 0
 
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
@@ -137,9 +137,9 @@ def isArgument(event):
 
     # 型チェック
     typeErrArray = []
-    typeErrArray.append(MAIL_SEND_ID) if (initCommon.isValidateNumber(event[MAIL_SEND_ID]) == False) else 0
-    typeErrArray.append(SEND_WEEK_TYPE) if (initCommon.isValidateNumber(event[SEND_WEEK_TYPE]) == False) else 0
-    typeErrArray.append(SEND_FREQUANCY) if (initCommon.isValidateNumber(event[SEND_FREQUANCY]) == False) else 0
+    # typeErrArray.append(MAIL_SEND_ID) if (initCommon.isValidateNumber(eBody[MAIL_SEND_ID]) == False) else 0
+    typeErrArray.append(SEND_WEEK_TYPE) if (initCommon.isValidateNumber(eBody[SEND_WEEK_TYPE]) == False) else 0
+    typeErrArray.append(SEND_FREQUANCY) if (initCommon.isValidateNumber(eBody[SEND_FREQUANCY]) == False) else 0
 
     # 型異常の場合は例外スロー
     if 0 < len(typeErrArray):
@@ -147,7 +147,7 @@ def isArgument(event):
 
     # メール通知IDの範囲チェック
     rangeArray = []
-    rangeArray.append(MAIL_SEND_ID) if(5 < event[MAIL_SEND_ID] or event[MAIL_SEND_ID] < 1) else 0
+    # rangeArray.append(MAIL_SEND_ID) if(5 < eBody[MAIL_SEND_ID] or eBody[MAIL_SEND_ID] < 1) else 0
 
     # 閾値項目が歯抜けの場合は例外スロー
     if 0 < len(rangeArray):
@@ -155,12 +155,12 @@ def isArgument(event):
 
     # データ長チェック
     lengthArray = []
-    lengthArray.append(EMAIL_ADDRESS) if (256 < len(event[EMAIL_ADDRESS])) else 0
-    lengthArray.append(SEND_TIME_FROM) if (6 < len(event[SEND_TIME_FROM])) else 0
-    lengthArray.append(SEND_TIME_TO) if (6 < len(event[SEND_TIME_TO])) else 0
-    lengthArray.append(MAIL_SUBJECT) if (30 < len(event[MAIL_SUBJECT])) else 0
-    lengthArray.append(SEND_WEEK_TYPE) if (MAX_TYNYINT_UNSIGNED < event[SEND_WEEK_TYPE]) else 0
-    lengthArray.append(SEND_FREQUANCY) if (MAX_TYNYINT_UNSIGNED < event[SEND_FREQUANCY]) else 0
+    lengthArray.append(EMAIL_ADDRESS) if (256 < len(eBody[EMAIL_ADDRESS])) else 0
+    lengthArray.append(SEND_TIME_FROM) if (6 < len(eBody[SEND_TIME_FROM])) else 0
+    lengthArray.append(SEND_TIME_TO) if (6 < len(eBody[SEND_TIME_TO])) else 0
+    lengthArray.append(MAIL_SUBJECT) if (30 < len(eBody[MAIL_SUBJECT])) else 0
+    lengthArray.append(SEND_WEEK_TYPE) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_WEEK_TYPE]) else 0
+    lengthArray.append(SEND_FREQUANCY) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_FREQUANCY]) else 0
 
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
@@ -171,8 +171,9 @@ def isArgument(event):
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
-def createCommonParams(event):
-
+def createCommonParams(mailSendId, event):
+    
+    event[MAIL_SEND_ID] = mailSendId
     event[CREATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
@@ -190,8 +191,11 @@ def lambda_handler(event, context):
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ更新開始 : %s' % event)
 
+    # ボディ部
+    eBody = event["bodyRequest"]
+
     # 入力チェック
-    isArgument(event)
+    isArgument(eBody)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
@@ -199,7 +203,7 @@ def lambda_handler(event, context):
     try:
         # メール通知マスタのUPSERT
         LOGGER.info("メール通知マスタのUPSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
-        rds.execute(initCommon.getQuery("sql/m_mail_send/upsert.sql"), createCommonParams(event) )
+        rds.execute(initCommon.getQuery("sql/m_mail_send/upsert.sql"), createCommonParams(event[MAIL_SEND_ID], eBody) )
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()
