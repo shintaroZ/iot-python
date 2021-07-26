@@ -5,9 +5,9 @@ import configparser
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 import boto3
+from botocore.exceptions import ClientError
 import re # 正規表現
 from enum import IntEnum
-
 
 # 送信ステータス
 class SendStatusEnum(IntEnum):
@@ -33,7 +33,7 @@ DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
-SNS_TOPIC_ARN = "hoge"
+SOURCE_ADDRESS = "hoge"
 
 # カラム名定数
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
@@ -138,9 +138,9 @@ def setRetryInterval(retryInterval):
     RETRY_INTERVAL = int(retryInterval)
 
 
-def setSnsTopicArn(snsTopicArn):
-    global SNS_TOPIC_ARN
-    SNS_TOPIC_ARN = snsTopicArn
+def setSourceAddress(sourceAddress):
+    global SOURCE_ADDRESS
+    SOURCE_ADDRESS = sourceAddress
 
 # --------------------------------------------------
 # 設定ファイル読み込み
@@ -163,7 +163,7 @@ def initConfig(clientName):
         setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
         setRetryMaxCount(config_ini['rds setting']['retryMaxcount'])
         setRetryInterval(config_ini['rds setting']['retryinterval'])
-        setSnsTopicArn(config_ini['rds setting']['snsTopicArn'])
+        setSourceAddress(config_ini['ses setting']['sourceAddress'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
@@ -178,23 +178,6 @@ def convertMeilText(mailText, record):
     # メール本文を改行(\r\n)で分割
     mailTextArray = mailText.split("\r\n")
 
-    mailTextArray = []
-    mailTextArray.append("#HEAD#")
-    mailTextArray.append("閾値異常を検知いたしました。")
-    mailTextArray.append("=============================")
-    mailTextArray.append("#END#")
-    mailTextArray.append("$swtStr='より超過しています' if record['limitJudgeType'] == 0 else 'と一致しています' if record['limitJudgeType'] == 1 else 'より下回っています'$")
-    mailTextArray.append("【検知日時】%record['detectionDateTime']%")
-    mailTextArray.append("【デバイスID】%record['deviceId']%")
-    mailTextArray.append("【センサID】%record['sensorId']%")
-    mailTextArray.append("【センサ名】%record['sensorName']%")
-    mailTextArray.append("【値】%record['sensorValue']%:::%record['sensorUnit']%")
-    mailTextArray.append("【閾値】%record['limitValue']%%swtStr%")
-    mailTextArray.append("#FOOTER#")
-    mailTextArray.append("=============================")
-    mailTextArray.append("※この電子メールは、送信専用メールアドレスよりお送りしています。メールの返信は受け付けておりません。予めご了承下さい。")
-    mailTextArray.append("#END#")
-
     isHeaderAppend = False
     isFooterAppend = False
     isEnd = False
@@ -207,7 +190,7 @@ def convertMeilText(mailText, record):
         dollArray = re.findall("\$.*?\$", mailTextArray[i])
         isSharp = True if 0 < len(re.findall("#.*#", mailTextArray[i])) else False
 
-        isHeader = True if 0 < len(re.findall("#HEAD#", mailTextArray[i])) else False
+        isHeader = True if 0 < len(re.findall("#HEADER#", mailTextArray[i])) else False
         isFooter = True if 0 < len(re.findall("#FOOTER#", mailTextArray[i])) else False
         isEnd = True if 0 < len(re.findall("#END#", mailTextArray[i])) else False
 
@@ -259,22 +242,34 @@ def convertMeilText(mailText, record):
         if (isFooterAppend and isFooter == False):
             footerArray.append(mailTextArray[i])
 
-    resultMap["header"] = headerArray
-    resultMap["body"] = bodyArray
-    resultMap["footer"] = footerArray
+    # 文字列で返却
+    resultMap["header"] = "\r\n".join(headerArray)
+    resultMap["body"] = "\r\n".join(bodyArray)
+    resultMap["footer"] = "\r\n".join(footerArray)
     return resultMap
 
-def createMailSendManagedParams(sendStatus, record):
+# --------------------------------------------------
+# メール通知管理テーブル更新用のパラメータ作成
+# --------------------------------------------------
+def createMailSendManagedParams(sendStatus, record, sendFrequancy):
 
     params = {}
     params[SEND_STATUS] = sendStatus
-    params[DATA_COLLECTION_SEQ] = record[DATA_COLLECTION_SEQ]
-    params[DETECTION_DATETIME] = record[DETECTION_DATETIME]
-    params[LIMIT_SUB_NO] = record[LIMIT_SUB_NO]
-    params[MAIL_SEND_ID] = record[MAIL_SEND_ID]
     params[UPDATED_AT] = initCommon.getSysDateJst()
+
+    whereArray = []
+    whereArray.append("MAIL_SEND_ID = %d" % record[MAIL_SEND_ID])
+    # 送信頻度パラメータに応じて条件追記
+    if sendFrequancy == SendFrequancyEnum.EachTime:
+        whereArray.append("DATA_COLLECTION_SEQ = %d" % record[DATA_COLLECTION_SEQ])
+        whereArray.append("DETECTION_DATETIME = '%s'" % record[DETECTION_DATETIME])
+        whereArray.append("LIMIT_SUB_NO = %d" % record[LIMIT_SUB_NO])
+    params["whereParams"] = (" AND ".join(whereArray))
     return params
 
+# --------------------------------------------------
+# メール送信
+# --------------------------------------------------
 def send_mail(sesClient, source, to, subject, body):
 
     response = sesClient.send_email(
@@ -305,28 +300,30 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
-    LOGGER.info('メール送信機能開始 : %s' % event)
-
+    LOGGER.info('メール通知機能開始 : %s' % event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
+
+    # AmazonSESクライアント作成
+    sesClient = boto3.client('ses', region_name='ap-northeast-1')
 
     # メール通知条件取得
     mmsRecords = rds.fetchall(initCommon.getQuery("sql/m_mail_send/findAll.sql"))
 
     for mmsRecord in mmsRecords:
 
-        LOGGER.info("通知条件を満たしたので、処理を継続します。[%d : %s : %d]"%
+        LOGGER.info("通知先ユーザ取得結果:[通知ID:%d, 通知先メールアドレス:%s, 送信頻度:%d]"%
                     (mmsRecord[MAIL_SEND_ID], mmsRecord[EMAIL_ADDRESS], mmsRecord[SEND_FREQUANCY]))
         # メールソース取得
         sourceRecords = rds.fetchall(initCommon.getQuery("sql/t_mail_send_managed/findbyId.sql")
                                      , {MAIL_SEND_ID : mmsRecord[MAIL_SEND_ID]})
 
-        mailBodyArray = []
+        resultBodyArray = []
         for i in range(len(sourceRecords)):
-            LOGGER.info("メール通知管理に紐付くデータの取得に成功しました。:[%d : %s : %d :%d]" %
+            LOGGER.info("メールソース取得結果:[データ定義マスタシーケンス:%d, 検知日時:%s, 閾値通番:%d, メール通知ID:%d]" %
                         (sourceRecords[i][DATA_COLLECTION_SEQ]
                          ,sourceRecords[i][DETECTION_DATETIME]
                          ,sourceRecords[i][LIMIT_SUB_NO]
@@ -335,31 +332,52 @@ def lambda_handler(event, context):
             # メール整形
             try:
                 resultMap = convertMeilText(mmsRecord[MAIL_TEXT], sourceRecords[i])
-                mailBodyArray.append(resultMap["body"])
+                resultBodyArray.append(resultMap["body"])
             except Exception as ex:
                 LOGGER.warn("メール整形に失敗しました。[%s]" % ex)
                 rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
-                            ,createMailSendManagedParams(SendStatusEnum.MailConvFailured, sourceRecords[i]))
+                            ,createMailSendManagedParams(SendStatusEnum.MailConvFailured
+                                                         , sourceRecords[i]
+                                                         , SendFrequancyEnum.Summary))
+                break
+
 
             # 送信頻度判定
-            if (mmsRecord[SEND_FREQUANCY] == SendFrequancyEnum.EachTime or i == len(sourceRecords)):
-                # メール送信
+            if (mmsRecord[SEND_FREQUANCY] == SendFrequancyEnum.EachTime
+                or (mmsRecord[SEND_FREQUANCY] == SendFrequancyEnum.Summary and i == len(sourceRecords) -1 )):
 
 
-                # ★
-                for h in resultMap["header"]:
-                    print(h)
-                for b in resultMap["body"]:
-                    print(b)
-                for f in resultMap["footer"]:
-                    print(f)
+                mailBodyArray = []
+                mailBodyArray.append(resultMap["header"]) if resultMap["header"] != "" else 0
+                mailBodyArray.append("\r\n".join(resultBodyArray))
+                mailBodyArray.append(resultMap["footer"]) if resultMap["footer"] != "" else 0
 
-                # メール送信
+                LOGGER.info("メール送信します。[%s]" %(mmsRecord[EMAIL_ADDRESS]) )
 
-#     # AmazonSESクライアント作成
-#     sesClient = boto3.client('ses', region_name='ap-northeast-1')
+                try:
+                    # メール送信
+                    send_mail(sesClient
+                              , SOURCE_ADDRESS
+                              , mmsRecord[EMAIL_ADDRESS]
+                              , mmsRecord[MAIL_SUBJECT]
+                              , "\r\n".join(mailBodyArray))
+                    # ステータス更新
+                    rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
+                            ,createMailSendManagedParams(SendStatusEnum.SendSuccess
+                                                         , sourceRecords[i]
+                                                         , mmsRecord[SEND_FREQUANCY]))
+
+                except ClientError as ex:
+                    LOGGER.warn("メール送信に失敗しました。[%s]" % ex)
+
+                    rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
+                            ,createMailSendManagedParams(SendStatusEnum.SendFailured
+                                                         , sourceRecords[i]
+                                                         , mmsRecord[SEND_FREQUANCY]))
 
 
+    # コミット
+    rds.commit()
 
     # close
     del rds
