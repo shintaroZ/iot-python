@@ -332,7 +332,6 @@ def lambda_handler(event, context):
             # メール整形
             try:
                 resultMap = convertMeilText(mmsRecord[MAIL_TEXT], sourceRecords[i])
-                resultBodyArray.append(resultMap["body"])
             except Exception as ex:
                 LOGGER.warn("メール整形に失敗しました。[%s]" % ex)
                 rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
@@ -341,6 +340,9 @@ def lambda_handler(event, context):
                                                          , SendFrequancyEnum.Summary))
                 break
 
+            # 送信頻度が0:都度の場合のみボディ部クリア
+            resultBodyArray.clear() if mmsRecord[SEND_FREQUANCY] == SendFrequancyEnum.EachTime else 0
+            resultBodyArray.append(resultMap["body"])
 
             # 送信頻度判定
             if (mmsRecord[SEND_FREQUANCY] == SendFrequancyEnum.EachTime

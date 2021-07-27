@@ -1,11 +1,5 @@
 import unittest
-import datetime
-from datetime import datetime as dt
-import json
-from collections import OrderedDict
-import pprint
 import lambda_function
-import pymysql
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
 
@@ -29,8 +23,10 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_NAME
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
+
+
     # ----------------------------------------------------------------------
-    # 全項目ありの新規
+    # 都度メール送信
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
@@ -39,3 +35,4 @@ class LambdaFunctionTest(unittest.TestCase):
 
         # 実行
         lambda_function.lambda_handler(event, None)
+

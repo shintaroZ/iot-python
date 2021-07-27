@@ -1,11 +1,3 @@
 {
-	"clientName": "eg-iot-develop",
-	"mailSendId": 3,
-	"emailAddress": "aaaaabbb@email.co.jp",
-	"sendWeekType": 0,
-	"sendFrequancy": 1,
-	"sendTimeFrom": "100000",
-	"sendTimeTo": "190000",
-	"mailSubject": "テスト件名1",
-	"mailText": "メール本文1********************"
+	"clientName": "eg-iot-develop"
 }
