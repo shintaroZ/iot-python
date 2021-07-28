@@ -20,6 +20,7 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
+MAIL_SEND_SEQ = "mailSendSeq"
 MAIL_SEND_ID = "mailSendId"
 EMAIL_ADDRESS = "emailAddress"
 SEND_WEEK_TYPE = "sendWeekType"
@@ -27,7 +28,9 @@ SEND_FREQUANCY = "sendFrequancy"
 SEND_TIME_FROM = "sendTimeFrom"
 SEND_TIME_TO = "sendTimeTo"
 MAIL_SUBJECT = "mailSubject"
-MAIL_TEXT = "mailText"
+MAIL_TEXT_HEADER = "mailTextHeader"
+MAIL_TEXT_BODY = "mailTextBody"
+MAIL_TEXT_FOOTER = "mailTextFooter"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -118,7 +121,7 @@ def initConfig(clientName):
 # --------------------------------------------------
 # 起動パラメータチェック
 # --------------------------------------------------
-def isArgument(eBody):
+def isArgument(eBody, event):
 
     # 必須項目チェック
     noneErrArray = []
@@ -129,7 +132,7 @@ def isArgument(eBody):
     noneErrArray.append(SEND_TIME_FROM) if (SEND_TIME_FROM not in eBody) else 0
     noneErrArray.append(SEND_TIME_TO) if (SEND_TIME_TO not in eBody) else 0
     noneErrArray.append(MAIL_SUBJECT) if (MAIL_SUBJECT not in eBody) else 0
-    noneErrArray.append(MAIL_TEXT) if (MAIL_TEXT not in eBody) else 0
+    noneErrArray.append(MAIL_TEXT_BODY) if (MAIL_TEXT_BODY not in eBody) else 0
 
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
@@ -147,9 +150,9 @@ def isArgument(eBody):
 
     # メール通知IDの範囲チェック
     rangeArray = []
-    # rangeArray.append(MAIL_SEND_ID) if(5 < eBody[MAIL_SEND_ID] or eBody[MAIL_SEND_ID] < 1) else 0
+    rangeArray.append(MAIL_SEND_ID) if(5 < event[MAIL_SEND_ID] or event[MAIL_SEND_ID] < 1) else 0
 
-    # 閾値項目が歯抜けの場合は例外スロー
+    # メール通知IDが範囲外の場合は例外スロー
     if 0 < len(rangeArray):
         raise Exception("The parameters is range invalid. [%s]" % ",".join(rangeArray))
 
@@ -161,6 +164,10 @@ def isArgument(eBody):
     lengthArray.append(MAIL_SUBJECT) if (30 < len(eBody[MAIL_SUBJECT])) else 0
     lengthArray.append(SEND_WEEK_TYPE) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_WEEK_TYPE]) else 0
     lengthArray.append(SEND_FREQUANCY) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_FREQUANCY]) else 0
+    # マルチバイト文字は2バイト計算
+    lengthArray.append(MAIL_TEXT_HEADER) if (MAIL_TEXT_HEADER in eBody and 65535 < len(eBody[MAIL_TEXT_HEADER].encode("shift-jis"))) else 0
+    lengthArray.append(MAIL_TEXT_BODY) if (65535 < len(eBody[MAIL_TEXT_BODY].encode("shift-jis"))) else 0
+    lengthArray.append(MAIL_TEXT_FOOTER) if (MAIL_TEXT_FOOTER in eBody and 65535 < len(eBody[MAIL_TEXT_FOOTER.encode("shift-jis")])) else 0
 
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
@@ -171,12 +178,28 @@ def isArgument(eBody):
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
-def createCommonParams(mailSendId, event):
-    
+def createCommonParams(mailSendId, event, version, mailSendSeq):
+
+    if MAIL_TEXT_HEADER in event:
+        event["insert_%s" % MAIL_TEXT_HEADER] = ", `MAIL_TEXT_HEADER`"
+        event["values_%s" % MAIL_TEXT_HEADER] = ", '%s'" % event[MAIL_TEXT_HEADER]
+    else:
+        event["insert_%s" % MAIL_TEXT_HEADER] = ""
+        event["values_%s" % MAIL_TEXT_HEADER] = ""
+
+    if MAIL_TEXT_FOOTER in event:
+        event["insert_%s" % MAIL_TEXT_FOOTER] = ", `MAIL_TEXT_FOOTER`"
+        event["values_%s" % MAIL_TEXT_FOOTER] = ", '%s'" % event[MAIL_TEXT_FOOTER]
+    else:
+        event["insert_%s" % MAIL_TEXT_FOOTER] = ""
+        event["values_%s" % MAIL_TEXT_FOOTER] = ""
+
+    event[MAIL_SEND_SEQ] = mailSendSeq
     event[MAIL_SEND_ID] = mailSendId
     event[CREATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
+    event[VERSION] = version
     return event
 
 
@@ -195,15 +218,31 @@ def lambda_handler(event, context):
     eBody = event["bodyRequest"]
 
     # 入力チェック
-    isArgument(eBody)
+    isArgument(eBody, event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
+    # バージョン取得
+    result = rds.fetchone(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
+                          , {MAIL_SEND_ID : event[MAIL_SEND_ID]})
+
+    # バージョンのインクリメント
+    version = 0
+    if result is not None and VERSION in result:
+        version = result[VERSION] + 1
+        LOGGER.info("登録対象バージョン [%d]" % version)
+
+    # シーケンス取得
+    mailSendSeq = 0
+    seqDcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 1})
+    LOGGER.info("メール通知マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
+    mailSendSeq = seqDcResult["nextSeq"]
+
     try:
-        # メール通知マスタのUPSERT
-        LOGGER.info("メール通知マスタのUPSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
-        rds.execute(initCommon.getQuery("sql/m_mail_send/upsert.sql"), createCommonParams(event[MAIL_SEND_ID], eBody) )
+        # メール通知マスタのINSERT
+        LOGGER.info("メール通知マスタのINSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
+        rds.execute(initCommon.getQuery("sql/m_mail_send/insert.sql"), createCommonParams(event[MAIL_SEND_ID], eBody, version, mailSendSeq) )
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()

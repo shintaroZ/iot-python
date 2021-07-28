@@ -1,11 +1,13 @@
 {
 	"clientName": "eg-iot-develop",
 	"mailSendId": "xxxxx",
-	"emailAddress": "ccc@email.co.jp",
-	"sendWeekType": "xxxxx",
-	"sendFrequancy": "xxxxx",
-	"sendTimeFrom": "100000",
-	"sendTimeTo": "190000",
-	"mailSubject": "テスト件名1",
-	"mailText": "メール本文1********************"
+	"bodyRequest" : {
+		"emailAddress": "ccc@email.co.jp",
+		"sendWeekType": "xxxxx",
+		"sendFrequancy": "xxxxx",
+		"sendTimeFrom": "100000",
+		"sendTimeTo": "190000",
+		"mailSubject": "テスト件名1",
+		"mailTextBody": "メール本文1********************"
+	}
 }

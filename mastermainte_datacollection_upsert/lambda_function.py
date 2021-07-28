@@ -273,64 +273,53 @@ def createWhereParam(event):
 # --------------------------------------------------
 # 起動パラメータにデータ定義マスタ用のパラメータを付与して返却する。
 # --------------------------------------------------
-def createDataCollectionParams(event, result, version, deviceId, sensorId):
+def createDataCollectionParams(event, version, deviceId, sensorId):
 
     # 起動パラメータの必須判定
-    # str項目
     if SENSOR_UNIT in event:
-        event[SENSOR_UNIT] = "'" + event[SENSOR_UNIT] + "'"
-    elif result is None:
-        event[SENSOR_UNIT] = "NULL"
-    elif result[SENSOR_UNIT] is None:
-        event[SENSOR_UNIT] = "NULL"
+        event["insert_%s" % SENSOR_UNIT] = ", `SENSOR_UNIT`"
+        event["values_%s" % SENSOR_UNIT] = ", '%s'" % event[SENSOR_UNIT]
     else:
-        event[SENSOR_UNIT] = "'" + result[SENSOR_UNIT] + "'"
+        event["insert_%s" % SENSOR_UNIT] = ""
+        event["values_%s" % SENSOR_UNIT] = ""
 
     if STATUS_TRUE in event:
-        event[STATUS_TRUE] = "'" + event[STATUS_TRUE] + "'"
-    elif result is None:
-        event[STATUS_TRUE] = "NULL"
-    elif result[STATUS_TRUE] is None:
-        event[STATUS_TRUE] = "NULL"
+        event["insert_%s" % STATUS_TRUE] = ", `STATUS_TRUE`"
+        event["values_%s" % STATUS_TRUE] = ", '%s'" % event[STATUS_TRUE]
     else:
-        event[STATUS_TRUE] = "'" + result[STATUS_TRUE] + "'"
+        event["insert_%s" % STATUS_TRUE] = ""
+        event["values_%s" % STATUS_TRUE] = ""
+
 
     if STATUS_FALSE in event:
-        event[STATUS_FALSE] = "'" + event[STATUS_FALSE] + "'"
-    elif result is None:
-        event[STATUS_FALSE] = "NULL"
-    elif result[STATUS_FALSE] is None:
-        event[STATUS_FALSE] = "NULL"
+        event["insert_%s" % STATUS_FALSE] = ", `STATUS_FALSE`"
+        event["values_%s" % STATUS_FALSE] = ", '%s'" % event[STATUS_FALSE]
     else:
-        event[STATUS_FALSE] = "'" + result[STATUS_FALSE] + "'"
+        event["insert_%s" % STATUS_FALSE] = ""
+        event["values_%s" % STATUS_FALSE] = ""
 
-    # float項目
+
     if REVISION_MAGNIFICATION in event:
-        event[REVISION_MAGNIFICATION] = event[REVISION_MAGNIFICATION]
-    elif result is None:
-        event[REVISION_MAGNIFICATION] = "NULL"
-    elif result[REVISION_MAGNIFICATION] is None:
-        event[REVISION_MAGNIFICATION] = "NULL"
+        event["insert_%s" % REVISION_MAGNIFICATION] = ", `REVISION_MAGNIFICATION`"
+        event["values_%s" % REVISION_MAGNIFICATION] = ", '%s'" % event[REVISION_MAGNIFICATION]
     else:
-        event[REVISION_MAGNIFICATION] = result[REVISION_MAGNIFICATION]
+        event["insert_%s" % REVISION_MAGNIFICATION] = ""
+        event["values_%s" % REVISION_MAGNIFICATION] = ""
 
     if X_COORDINATE in event:
-        event[X_COORDINATE] = event[X_COORDINATE]
-    elif result is None:
-        event[X_COORDINATE] = "NULL"
-    elif result[X_COORDINATE] is None:
-        event[X_COORDINATE] = "NULL"
+        event["insert_%s" % X_COORDINATE] = ", `X_COORDINATE`"
+        event["values_%s" % X_COORDINATE] = ", '%s'" % event[X_COORDINATE]
     else:
-        event[X_COORDINATE] = result[X_COORDINATE]
+        event["insert_%s" % X_COORDINATE] = ""
+        event["values_%s" % X_COORDINATE] = ""
 
     if Y_COORDINATE in event:
-        event[Y_COORDINATE] = event[Y_COORDINATE]
-    elif result is None:
-        event[Y_COORDINATE] = "NULL"
-    elif result[Y_COORDINATE] is None:
-        event[Y_COORDINATE] = "NULL"
+        event["insert_%s" % Y_COORDINATE] = ", `Y_COORDINATE`"
+        event["values_%s" % Y_COORDINATE] = ", '%s'" % event[Y_COORDINATE]
     else:
-        event[Y_COORDINATE] = result[Y_COORDINATE]
+        event["insert_%s" % Y_COORDINATE] = ""
+        event["values_%s" % Y_COORDINATE] = ""
+
 
     event[DEVICE_ID] = deviceId
     event[SENSOR_ID] = sensorId
@@ -377,22 +366,21 @@ def lambda_handler(event, context):
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
-    # マスタselect
+    # バージョン取得
     result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
                           , createWhereParam(event))
 
-    # シーケンス判定
-    dataCollectionSeq = 0
-    version = 0
-    seqDcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 0})
-    LOGGER.info("データ定義マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
-    dataCollectionSeq = seqDcResult["nextSeq"]
-
-
     # バージョンのインクリメント
+    version = 0
     if result is not None and VERSION in result:
         version = result[VERSION] + 1
         LOGGER.info("登録対象バージョン [%d]" % version)
+
+    # シーケンス取得
+    dataCollectionSeq = 0
+    seqDcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 0})
+    LOGGER.info("データ定義マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
+    dataCollectionSeq = seqDcResult["nextSeq"]
 
     try:
         # 閾値登録判定
@@ -412,7 +400,7 @@ def lambda_handler(event, context):
 
         # データ定義マスタのINSERT
         LOGGER.info("データ定義マスタのINSERT [%s, %s]" % (event[DEVICE_ID], event[SENSOR_ID]) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/insert.sql"), createDataCollectionParams(eBody, result, version,event[DEVICE_ID], event[SENSOR_ID]))
+        rds.execute(initCommon.getQuery("sql/m_data_collection/insert.sql"), createDataCollectionParams(eBody, version, event[DEVICE_ID], event[SENSOR_ID]))
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()

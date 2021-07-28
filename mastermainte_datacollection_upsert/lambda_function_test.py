@@ -328,3 +328,48 @@ class LambdaFunctionTest(unittest.TestCase):
             print(ex)
             isException = True
         self.assertEqual(isException, True)
+
+    # ----------------------------------------------------------------------
+    # バージョン採番
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_011(self):
+        print("---test_lambda_handler_011---")
+        event = initCommon.readFileToJson('test/function/input011.json')
+
+        # 削除
+        RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql")
+                    , { "sensorId" : event["sensorId"]
+                       ,"deviceId" : event["deviceId"] })
+        RDS.commit()
+
+        # 実行1回目
+        lambda_function.lambda_handler(event, None)
+
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        self.assertEqual(0, result["version"])
+
+        # 実行2回目
+        lambda_function.lambda_handler(event, None)
+
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        self.assertEqual(1, result["version"])
+
+
+        # 論理削除
+        RDS.execute(initCommon.getQuery("test/sql/m_data_collection/update.sql")
+                    , { "sensorId" : event["sensorId"]
+                       ,"deviceId" : event["deviceId"] })
+        RDS.commit()
+
+
+        # 実行3回目
+        lambda_function.lambda_handler(event, None)
+
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        self.assertEqual(2, result["version"])

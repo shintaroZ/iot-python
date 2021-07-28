@@ -40,7 +40,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result = RDS.fetchone(initCommon.getQuery("test/sql/m_mail_send/delete.sql"),
                               {
                                   "mailSendId" : event["mailSendId"]
-                                  ,"deleteCount" : 0 })
+                              })
         RDS.commit()
 
         # 実行
@@ -49,7 +49,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result = RDS.fetchone(initCommon.getQuery("test/sql/m_mail_send/findbyId.sql"),
                               {
                                   "mailSendId" : event["mailSendId"]
-                                  ,"deleteCount" : 0 })
+                              })
         self.assertEqual(result["mailSendId"], 3)
         self.assertEqual(result["emailAddress"], "aaaaabbb@email.co.jp")
         self.assertEqual(result["sendWeekType"], 0)
@@ -71,7 +71,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result = RDS.fetchone(initCommon.getQuery("test/sql/m_mail_send/findbyId.sql"),
                               {
                                   "mailSendId" : event["mailSendId"]
-                                  ,"deleteCount" : 0 })
+                              })
         self.assertEqual(result["mailSendId"], 3)
         self.assertEqual(result["emailAddress"], "ccc@email.co.jp")
         self.assertEqual(result["sendWeekType"], 0)

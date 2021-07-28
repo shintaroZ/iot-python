@@ -1,3 +1,5 @@
 {
-	"clientName": "eg-iot-develop"
+	"clientName": "eg-iot-develop",
+	"bodyRequest" : {
+	}
 }

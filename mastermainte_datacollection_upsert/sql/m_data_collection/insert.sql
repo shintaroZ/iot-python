@@ -6,14 +6,14 @@ into `M_DATA_COLLECTION`(
     , `DELETE_FLG`
     , `VERSION`
     , `SENSOR_NAME`
-    , `SENSOR_UNIT`
-    , `STATUS_TRUE`
-    , `STATUS_FALSE`
+    %(insert_sensorUnit)s
+    %(insert_statusTrue)s
+    %(insert_statusFalse)s
     , `COLLECTION_VALUE_TYPE`
     , `COLLECTION_TYPE`
-    , `REVISION_MAGNIFICATION`
-    , `X_COORDINATE`
-    , `Y_COORDINATE`
+    %(insert_revisionMagnification)s
+    %(insert_xCoordinate)s
+    %(insert_yCoordinate)s
     , `CREATED_AT`
     , `UPDATED_USER`
 )
@@ -24,14 +24,14 @@ values (
     , 0
     , %(version)d
     , '%(sensorName)s'
-    , %(sensorUnit)s
-    , %(statusTrue)s
-    , %(statusFalse)s
+    %(values_sensorUnit)s
+    %(values_statusTrue)s
+    %(values_statusFalse)s
     , %(collectionValueType)d
     , %(collectionType)d
-    , %(revisionMagnification)s
-    , %(xCoordinate)s
-    , %(yCoordinate)s
+    %(values_revisionMagnification)s
+    %(values_xCoordinate)s
+    %(values_yCoordinate)s
     , '%(createdAt)s'
     , '%(updatedUser)s'
 );
