@@ -21,10 +21,10 @@ RETRY_INTERVAL = 500
 
 # カラム名定数
 CLIENT_NAME = "clientName"
-DEVICE_ID = "deviceId"
-DELETE_COUNT = "deleteCount"
-SENSOR_ID = "sensorId"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
+DEVICE_ID = "deviceId"
+DELETE_FLG = "deleteFlg"
+SENSOR_ID = "sensorId"
 SENSOR_NAME = "sensorName"
 SENSOR_UNIT = "sensorUnit"
 STATUS_TRUE = "statusTrue"
@@ -37,7 +37,6 @@ Y_COORDINATE = "yCoordinate"
 SAVING_FLG = "savingFlg"
 LIMIT_CHECK_FLG = "limitCheckFlg"
 
-LIMIT_CHECK_SEQ = "limitCheckSeq"
 LIMIT_COUNT_TYPE = "limitCountType"
 LIMIT_COUNT = "limitCount"
 LIMIT_COUNT_RESET_RANGE = "limitCountResetRange"
@@ -155,9 +154,9 @@ def createWhereParam(event):
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
-def createDeleteCountParams(event, deleteCount):
+def createDeleteFlgParams(event, deleteFlg):
 
-    event[DELETE_COUNT] = deleteCount
+    event[DELETE_FLG] = deleteFlg
     return createCommonParams(event)
 
 # --------------------------------------------------
@@ -185,17 +184,10 @@ def lambda_handler(event, context):
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
-    # マスタselect
-    result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
-                          , createWhereParam(event))
-
-    # 削除回数
-    deleteCount = 1 if result is None else result[DELETE_COUNT] + 1
-
     try:
         # データ定義マスタの論理削除
-        LOGGER.info("データ定義マスタの論理削除 [%s, %s, %d]" % (event[DEVICE_ID], event[SENSOR_ID], deleteCount) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/update.sql"), createDeleteCountParams(event, deleteCount))
+        LOGGER.info("データ定義マスタの論理削除 [%s, %s, %d]" % (event[DEVICE_ID], event[SENSOR_ID], 1) )
+        rds.execute(initCommon.getQuery("sql/m_data_collection/update.sql"), createDeleteFlgParams(event, 1))
 
     except Exception as ex:
         LOGGER.error("削除に失敗しました。ロールバックします。")

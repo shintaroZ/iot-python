@@ -22,10 +22,10 @@ IS_LIMIT = False
 
 # カラム名定数
 CLIENT_NAME = "clientName"
-DEVICE_ID = "deviceId"
-DELETE_COUNT = "deleteCount"
-SENSOR_ID = "sensorId"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
+DEVICE_ID = "deviceId"
+SENSOR_ID = "sensorId"
+DELETE_FLG = "deleteFlg"
 SENSOR_NAME = "sensorName"
 SENSOR_UNIT = "sensorUnit"
 STATUS_TRUE = "statusTrue"
@@ -38,7 +38,6 @@ Y_COORDINATE = "yCoordinate"
 SAVING_FLG = "savingFlg"
 LIMIT_CHECK_FLG = "limitCheckFlg"
 
-LIMIT_CHECK_SEQ = "limitCheckSeq"
 LIMIT_COUNT_TYPE = "limitCountType"
 LIMIT_COUNT = "limitCount"
 LIMIT_COUNT_RESET_RANGE = "limitCountResetRange"
@@ -157,11 +156,11 @@ def isArgument(eBody):
     noneErrArray.append(COLLECTION_TYPE) if (COLLECTION_TYPE not in eBody) else 0
     noneErrArray.append(SAVING_FLG) if (SAVING_FLG not in eBody) else 0
     noneErrArray.append(LIMIT_CHECK_FLG) if (LIMIT_CHECK_FLG not in eBody) else 0
-    
+
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
         raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
-    
+
     # 型チェック
     typeErrArray = []
     typeErrArray.append(COLLECTION_VALUE_TYPE) if (initCommon.isValidateNumber(eBody[COLLECTION_VALUE_TYPE]) == False) else 0
@@ -176,20 +175,20 @@ def isArgument(eBody):
     typeErrArray.append(LIMIT_COUNT_RESET_RANGE) if(LIMIT_COUNT_RESET_RANGE in eBody and initCommon.isValidateNumber(eBody[LIMIT_COUNT_RESET_RANGE]) == False) else 0
     typeErrArray.append(ACTION_RANGE) if (ACTION_RANGE in eBody and initCommon.isValidateNumber(eBody[ACTION_RANGE]) == False) else 0
     typeErrArray.append(NEXT_ACTION) if (NEXT_ACTION in eBody and initCommon.isValidateNumber(eBody[NEXT_ACTION]) == False) else 0
-       
+
     if LIMIT_RECORDS in eBody:
         for r in eBody[LIMIT_RECORDS]:
             typeErrArray.append(LIMIT_SUB_NO) if (LIMIT_SUB_NO in r and initCommon.isValidateNumber(r[LIMIT_SUB_NO]) == False) else 0
             typeErrArray.append(LIMIT_JUDGE_TYPE) if (LIMIT_JUDGE_TYPE in r and initCommon.isValidateNumber(r[LIMIT_JUDGE_TYPE]) == False) else 0
             typeErrArray.append(LIMIT_VALUE) if (LIMIT_VALUE in r and initCommon.isValidateNumber(r[LIMIT_VALUE]) == False) else 0
-            
+
     # 重複削除
     set(typeErrArray)
-    
+
     # 型異常の場合は例外スロー
     if 0 < len(typeErrArray):
         raise TypeError("The parameters is type invalid. [%s]" % ",".join(typeErrArray))
-    
+
     # 閾値の必須チェック（閾値成立回数条件〜閾値の何かが含まれる場合は必須）
     limitArray = [LIMIT_COUNT_TYPE, LIMIT_COUNT, LIMIT_COUNT_RESET_RANGE, ACTION_RANGE, NEXT_ACTION]
     limitChildArray = []
@@ -200,7 +199,7 @@ def isArgument(eBody):
     limitArray.remove(ACTION_RANGE) if (ACTION_RANGE in eBody) else 0
     limitArray.remove(NEXT_ACTION) if (NEXT_ACTION in eBody) else 0
     limitArray.clear() if len(limitArray) == 5 else setIsLimit(True)
-    
+
     if LIMIT_RECORDS in eBody:
         for r in eBody[LIMIT_RECORDS]:
             limitChildArray = [LIMIT_SUB_NO, LIMIT_JUDGE_TYPE, LIMIT_VALUE]
@@ -213,11 +212,11 @@ def isArgument(eBody):
 
     # 配列結合
     limitArray.extend(limitChildArray)
-    
+
     # 閾値項目が歯抜けの場合は例外スロー
     if 0 < len(limitArray):
         raise Exception("Missing required request parameters. [%s]" % ",".join(limitArray))
-        
+
     # データ長チェック
     lengthArray = []
     # lengthArray.append(DEVICE_ID) if (20 < len(eBody[DEVICE_ID])) else 0
@@ -239,19 +238,19 @@ def isArgument(eBody):
 
     lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT_TYPE]) else 0
     lengthArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and MAX_SMALLINT_UNSIGNED < eBody[LIMIT_COUNT_TYPE]) else 0
-    
+
     if LIMIT_RECORDS in eBody:
         for r in eBody[LIMIT_RECORDS]:
             lengthArray.append(LIMIT_SUB_NO) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_SUB_NO]) else 0
             lengthArray.append(LIMIT_JUDGE_TYPE) if (MAX_TYNYINT_UNSIGNED < r[LIMIT_JUDGE_TYPE]) else 0
-             
+
     # 重複削除
     set(lengthArray)
-    
+
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
         raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
-    
+
     return
 
 # --------------------------------------------------
@@ -265,17 +264,17 @@ def createWhereParam(event):
         whereArray.append("AND mdc.DEVICE_ID = '%s'" % event["deviceId"])
     if "sensorId" in event:
         whereArray.append("AND mdc.SENSOR_ID = '%s'" % event["sensorId"])
-    
+
     if 0 < len(whereArray):
         whereStr = " ".join(whereArray)
-    
+
     return {"p_whereParams" : whereStr}
-    
+
 # --------------------------------------------------
 # 起動パラメータにデータ定義マスタ用のパラメータを付与して返却する。
 # --------------------------------------------------
 def createDataCollectionParams(event, result, version, deviceId, sensorId):
-    
+
     # 起動パラメータの必須判定
     # str項目
     if SENSOR_UNIT in event:
@@ -286,7 +285,7 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[SENSOR_UNIT] = "NULL"
     else:
         event[SENSOR_UNIT] = "'" + result[SENSOR_UNIT] + "'"
-        
+
     if STATUS_TRUE in event:
         event[STATUS_TRUE] = "'" + event[STATUS_TRUE] + "'"
     elif result is None:
@@ -295,7 +294,7 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[STATUS_TRUE] = "NULL"
     else:
         event[STATUS_TRUE] = "'" + result[STATUS_TRUE] + "'"
-        
+
     if STATUS_FALSE in event:
         event[STATUS_FALSE] = "'" + event[STATUS_FALSE] + "'"
     elif result is None:
@@ -304,7 +303,7 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[STATUS_FALSE] = "NULL"
     else:
         event[STATUS_FALSE] = "'" + result[STATUS_FALSE] + "'"
-    
+
     # float項目
     if REVISION_MAGNIFICATION in event:
         event[REVISION_MAGNIFICATION] = event[REVISION_MAGNIFICATION]
@@ -314,7 +313,7 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[REVISION_MAGNIFICATION] = "NULL"
     else:
         event[REVISION_MAGNIFICATION] = result[REVISION_MAGNIFICATION]
-        
+
     if X_COORDINATE in event:
         event[X_COORDINATE] = event[X_COORDINATE]
     elif result is None:
@@ -323,7 +322,7 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[X_COORDINATE] = "NULL"
     else:
         event[X_COORDINATE] = result[X_COORDINATE]
-        
+
     if Y_COORDINATE in event:
         event[Y_COORDINATE] = event[Y_COORDINATE]
     elif result is None:
@@ -332,18 +331,17 @@ def createDataCollectionParams(event, result, version, deviceId, sensorId):
         event[Y_COORDINATE] = "NULL"
     else:
         event[Y_COORDINATE] = result[Y_COORDINATE]
-    
+
     event[DEVICE_ID] = deviceId
     event[SENSOR_ID] = sensorId
-        
+
     return createCommonParams(event, version)
 
 # --------------------------------------------------
 # 起動パラメータにシーケンス情報を付与して返却する。
 # --------------------------------------------------
-def createLSeqParams(event, version, dataCollectionSeq, limitCheckSeq):
+def createLSeqParams(event, version, dataCollectionSeq):
     event[DATA_COLLECTION_SEQ] = dataCollectionSeq
-    event[LIMIT_CHECK_SEQ] = limitCheckSeq
     return createCommonParams(event, version)
 
 # --------------------------------------------------
@@ -357,7 +355,7 @@ def createCommonParams(event, version):
     event[VERSION] = version
     return event
 
-    
+
 #####################
 # main
 #####################
@@ -366,75 +364,63 @@ def lambda_handler(event, context):
 
     # 初期処理
     initConfig(event["clientName"])
-    # setLogger(initCommon.getLogger(LOG_LEVEL))
-    setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger(LOG_LEVEL))
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
     # body部
     eBody = event["bodyRequest"]
-    
+
     # 入力チェック
     isArgument(eBody)
-    
+
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
     # マスタselect
     result = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
                           , createWhereParam(event))
-    
+
     # シーケンス判定
     dataCollectionSeq = 0
-    limitCheckSeq = 0
     version = 0
-    if result is not None and DATA_COLLECTION_SEQ in result:
-        dataCollectionSeq = result[DATA_COLLECTION_SEQ]
-    else:
-        seqDcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 0})
-        LOGGER.info("データ定義マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
-        dataCollectionSeq = seqDcResult["nextSeq"]
-        
-    if result is not None and LIMIT_CHECK_SEQ in result:
-        limitCheckSeq = result[LIMIT_CHECK_SEQ]
-    else:
-        seqLcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 1})
-        LOGGER.info("閾値条件マスタシーケンスの新規採番 [%d]" % seqLcResult["nextSeq"])
-        limitCheckSeq = seqLcResult["nextSeq"]
+    seqDcResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 0})
+    LOGGER.info("データ定義マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
+    dataCollectionSeq = seqDcResult["nextSeq"]
+
+
     # バージョンのインクリメント
     if result is not None and VERSION in result:
         version = result[VERSION] + 1
         LOGGER.info("登録対象バージョン [%d]" % version)
-        
+
     try:
         # 閾値登録判定
         if IS_LIMIT:
-            # 閾値マスタのDELETE/INSERT
-            LOGGER.info("閾値マスタのDELETE [limitCheckSeq = %d]" % limitCheckSeq)
-            rds.execute(initCommon.getQuery("sql/m_limit/delete.sql"), {"limitCheckSeq" : limitCheckSeq })
+            # 閾値マスタのINSERT
             for r in eBody[LIMIT_RECORDS]:
                 LOGGER.info("閾値マスタのINSERT [%s]" % r)
-                rds.execute(initCommon.getQuery("sql/m_limit/insert.sql"), createLSeqParams(r, version, dataCollectionSeq, limitCheckSeq))
-            
-            # 閾値条件マスタのUPSERT
-            LOGGER.info("閾値条件マスタのUPSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
-            rds.execute(initCommon.getQuery("sql/m_limit_check/upsert.sql"), createLSeqParams(eBody, version, dataCollectionSeq, limitCheckSeq))
-        
-        # 連携フラグマスタのUPSERT
-        LOGGER.info("連携フラグマスタのUPSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
-        rds.execute(initCommon.getQuery("sql/m_link_flg/upsert.sql"), createLSeqParams(eBody, version, dataCollectionSeq, limitCheckSeq))
-        
-        # データ定義マスタのUPSERT
-        LOGGER.info("データ定義マスタのUPSERT [%s, %s]" % (event[DEVICE_ID], event[SENSOR_ID]) )
-        rds.execute(initCommon.getQuery("sql/m_data_collection/upsert.sql"), createDataCollectionParams(eBody, result, version,event[DEVICE_ID], event[SENSOR_ID]))
+                rds.execute(initCommon.getQuery("sql/m_limit/insert.sql"), createLSeqParams(r, version, dataCollectionSeq))
+
+            # 閾値条件マスタのINSERT
+            LOGGER.info("閾値条件マスタのINSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
+            rds.execute(initCommon.getQuery("sql/m_limit_check/insert.sql"), createLSeqParams(eBody, version, dataCollectionSeq))
+
+        # 連携フラグマスタのINSERT
+        LOGGER.info("連携フラグマスタのINSERT [dataCollectionSeq = %d]" % dataCollectionSeq)
+        rds.execute(initCommon.getQuery("sql/m_link_flg/insert.sql"), createLSeqParams(eBody, version, dataCollectionSeq))
+
+        # データ定義マスタのINSERT
+        LOGGER.info("データ定義マスタのINSERT [%s, %s]" % (event[DEVICE_ID], event[SENSOR_ID]) )
+        rds.execute(initCommon.getQuery("sql/m_data_collection/insert.sql"), createDataCollectionParams(eBody, result, version,event[DEVICE_ID], event[SENSOR_ID]))
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()
         raise ex
-    
+
     # commit
     rds.commit()
-    
+
     # close
     del rds
-    
+

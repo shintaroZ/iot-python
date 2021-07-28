@@ -1,0 +1,1 @@
+delete from `M_LIMIT_CHECK` where DATA_COLLECTION_SEQ in (0, 1);

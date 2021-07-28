@@ -42,9 +42,7 @@ class LambdaFunctionTest(unittest.TestCase):
 
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
-            limitCheckSeq = result["limitCheckSeq"]
-            if limitCheckSeq is not None:
-                RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"limitCheckSeq" : limitCheckSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_limit_check/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
@@ -61,7 +59,6 @@ class LambdaFunctionTest(unittest.TestCase):
         lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
 
         self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
-        self.assertEqual(result[0]["limitCheckSeq"], lcSeqResult["seqNo"])
 
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1001")
@@ -101,9 +98,7 @@ class LambdaFunctionTest(unittest.TestCase):
 
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
-            limitCheckSeq = result["limitCheckSeq"]
-            if limitCheckSeq is not None:
-                RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"limitCheckSeq" : limitCheckSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_limit_check/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
@@ -133,7 +128,6 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[0]["yCoordinate"], None)
         self.assertEqual(result[0]["savingFlg"], 0)
         self.assertEqual(result[0]["limitCheckFlg"], 1)
-        self.assertEqual(result[0]["limitCheckSeq"], lcSeqResult["seqNo"])
         self.assertEqual(result[0]["limitCountType"], 1)
         self.assertEqual(result[0]["limitCount"], 5)
         self.assertEqual(result[0]["limitCountResetRange"], 3)
@@ -161,9 +155,7 @@ class LambdaFunctionTest(unittest.TestCase):
 
         if result is not None:
             dataCollectionSeq = result["dataCollectionSeq"]
-            limitCheckSeq = result["limitCheckSeq"]
-            if limitCheckSeq is not None:
-                RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"limitCheckSeq" : limitCheckSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_limit_check/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
             RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
@@ -205,7 +197,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[0]["statusFalse"], "")
         self.assertEqual(result[0]["collectionValueType"], 0)
         self.assertEqual(result[0]["collectionType"], 1)
-        self.assertEqual(result[0]["revisionMagnification"], 0.1)
+        self.assertEqual(result[0]["revisionMagnification"], 0.01)
         self.assertEqual(result[0]["savingFlg"], 0)
         self.assertEqual(result[0]["limitCheckFlg"], 1)
         self.assertEqual(result[0]["limitCountType"], 1)

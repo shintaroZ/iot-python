@@ -7,9 +7,12 @@ into `M_LIMIT`(
     , `CREATED_AT`
 )
 values (
-     %(dataCollectionSeq)d
-    , %(limitSubNo)d
-    , %(limitJudgeType)d
-    , %(limitValue)f
-    , '%(createdAt)s'
+    1
+    , 1
+    , 2
+    , -12
+    , '2021/07/28 16:30:31'
 )
+ON DUPLICATE KEY UPDATE
+    DATA_COLLECTION_SEQ = values(DATA_COLLECTION_SEQ)
+;

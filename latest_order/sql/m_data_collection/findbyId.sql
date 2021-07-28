@@ -14,5 +14,16 @@ from
 where
     mdc.DEVICE_ID = '%(p_deviceId)s'
 and mdc.SENSOR_ID = '%(p_sensorId)s'
-and mdc.DELETE_COUNT = 0
+and mdc.DELETE_FLG = 0
+and not exists (
+	select
+		1
+	from
+		M_DATA_COLLECTION mdcSub
+	where
+		mdc.DATA_COLLECTION_SEQ = mdcSub.DATA_COLLECTION_SEQ
+	and mdc.DEVICE_ID = mdcSub.DEVICE_ID
+	and mdc.SENSOR_ID = mdcSub.SENSOR_ID
+	and mdc.VERSION < mdcSub.VERSION
+    )
 ;

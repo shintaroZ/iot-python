@@ -1,0 +1,1 @@
+delete from `M_DATA_COLLECTION` where DATA_COLLECTION_SEQ in (0, 1);

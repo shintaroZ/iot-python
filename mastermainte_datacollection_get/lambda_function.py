@@ -35,7 +35,6 @@ Y_COORDINATE = "yCoordinate"
 SAVING_FLG = "savingFlg"
 LIMIT_CHECK_FLG = "limitCheckFlg"
 
-LIMIT_CHECK_SEQ = "limitCheckSeq"
 LIMIT_COUNT_TYPE = "limitCountType"
 LIMIT_COUNT = "limitCount"
 LIMIT_COUNT_RESET_RANGE = "limitCountResetRange"
@@ -193,8 +192,7 @@ def convertResult(result):
             parentTable[LIMIT_CHECK_FLG] = result[i][LIMIT_CHECK_FLG]
 
             # 可変部
-            if result[i][LIMIT_CHECK_SEQ] is not None:
-                parentTable[LIMIT_CHECK_SEQ] = result[i][LIMIT_CHECK_SEQ]
+            if result[i][LIMIT_COUNT_TYPE] is not None:
                 parentTable[LIMIT_COUNT_TYPE] = result[i][LIMIT_COUNT_TYPE]
                 parentTable[LIMIT_COUNT] = result[i][LIMIT_COUNT]
                 parentTable[LIMIT_COUNT_RESET_RANGE] = result[i][LIMIT_COUNT_RESET_RANGE]
@@ -211,7 +209,7 @@ def convertResult(result):
             beforeKeyTable[SENSOR_ID] = result[i][SENSOR_ID]
 
         # 可変部
-        if result[i][LIMIT_CHECK_SEQ] is not None:
+        if result[i][LIMIT_SUB_NO] is not None:
             childTable = {}
             childTable[LIMIT_SUB_NO] = result[i][LIMIT_SUB_NO]
             childTable[LIMIT_JUDGE_TYPE] = result[i][LIMIT_JUDGE_TYPE]
