@@ -1,1 +1,1 @@
-delete from `M_DATA_COLLECTION` where DATA_COLLECTION_SEQ in (0, 1, 2, 3);
+delete from `M_DATA_COLLECTION` where DATA_COLLECTION_SEQ between 0 and 4;

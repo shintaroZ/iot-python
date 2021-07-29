@@ -95,6 +95,8 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix005.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix005.sql"))
         RDS.commit()
 
         # 公開DBクリア
@@ -110,13 +112,13 @@ class LambdaFunctionTest(unittest.TestCase):
 
         # assert用にSelect
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/02/16 21:56:38.895" })
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
                                 , { "p_dataCollectionSeq": 1
                                    , "p_receivedDateTime": "2021/02/16 21:56:38.895" })
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/02/16 21:57:38.895" })
         self.assertEqual(result1["sensorValue"], 12.31)
         self.assertEqual(result2["sensorValue"], 23.56)
@@ -136,6 +138,8 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix005.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix005.sql"))
         RDS.commit()
         
         # 公開DB登録
@@ -173,6 +177,8 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix005.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix005.sql"))
         RDS.commit()
         
         # 公開DBクリア
@@ -187,7 +193,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result = lambda_function.lambda_handler(event, None)
 
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
 
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
@@ -195,11 +201,11 @@ class LambdaFunctionTest(unittest.TestCase):
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
 
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:10:00" })
 
         result4 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
 
         result5 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
@@ -207,7 +213,7 @@ class LambdaFunctionTest(unittest.TestCase):
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
 
         result6 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 0
+                                , { "p_dataCollectionSeq": 4
                                    , "p_receivedDateTime": "2021/07/05 12:40:00" })
 
         self.assertEqual(result1["sensorValue"], 12.34)
@@ -239,6 +245,8 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix003.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix004.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix004.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix005.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix005.sql"))
         RDS.commit()
         
         # 公開DBクリア
@@ -289,6 +297,8 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix003.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix004.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix004.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix005.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix005.sql"))
         RDS.commit()
         
         # 公開DBクリア
