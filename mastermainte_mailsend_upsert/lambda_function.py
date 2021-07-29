@@ -22,6 +22,7 @@ RETRY_INTERVAL = 500
 # カラム名定数
 MAIL_SEND_SEQ = "mailSendSeq"
 MAIL_SEND_ID = "mailSendId"
+DELETE_FLG = "deleteFlg"
 EMAIL_ADDRESS = "emailAddress"
 SEND_WEEK_TYPE = "sendWeekType"
 SEND_FREQUANCY = "sendFrequancy"
@@ -167,7 +168,7 @@ def isArgument(eBody, event):
     # マルチバイト文字は2バイト計算
     lengthArray.append(MAIL_TEXT_HEADER) if (MAIL_TEXT_HEADER in eBody and 65535 < len(eBody[MAIL_TEXT_HEADER].encode("shift-jis"))) else 0
     lengthArray.append(MAIL_TEXT_BODY) if (65535 < len(eBody[MAIL_TEXT_BODY].encode("shift-jis"))) else 0
-    lengthArray.append(MAIL_TEXT_FOOTER) if (MAIL_TEXT_FOOTER in eBody and 65535 < len(eBody[MAIL_TEXT_FOOTER.encode("shift-jis")])) else 0
+    lengthArray.append(MAIL_TEXT_FOOTER) if (MAIL_TEXT_FOOTER in eBody and 65535 < len(eBody[MAIL_TEXT_FOOTER].encode("shift-jis"))) else 0
 
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
@@ -211,6 +212,7 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
+    # setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ更新開始 : %s' % event)
 

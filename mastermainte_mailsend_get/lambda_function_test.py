@@ -29,15 +29,78 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
     # ----------------------------------------------------------------------
-    # 全件取得
+    # 追加⇨追加
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
-
-        # 実行
         event = initCommon.readFileToJson('test/function/input001.json')
+    
+        # ２世代追加
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/delete.sql"), { "mailSendId" : 1 })
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/insertFix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/insertFix002.sql"))
+        RDS.commit()
+        
+        # 実行
+        result = lambda_function.lambda_handler(event, None)
+
+        print ("================ result ================")
+        print (result)
+        
+        resultJson = json.loads(result)
+        for r in resultJson["records"]:
+            if r["mailSendId"] == 1:
+                self.assertEqual(r["version"], 1)
+                self.assertEqual(r["mailSubject"], "閾値メールSubject2")
+
+    # ----------------------------------------------------------------------
+    # 追加⇨削除
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_002(self):
+        print("---test_lambda_handler_002---")
+        event = initCommon.readFileToJson('test/function/input001.json')
+        
+        # 追加⇨削除
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/delete.sql"), { "mailSendId" : 1 })
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/insertFix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/update.sql"), { "mailSendId" : 1 })
+        RDS.commit()
+        
+        # 実行
+        result = lambda_function.lambda_handler(event, None)
+
+        print ("================ result ================")
+        print (result)
+        
+        resultJson = json.loads(result)
+        isNotRecord = False
+        for r in resultJson["records"]:
+            if r["mailSendId"] == 1:
+                isNotRecord = True
+        self.assertEqual(isNotRecord, False)
+        
+    # ----------------------------------------------------------------------
+    # 追加⇨削除⇨追加
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_003(self):
+        print("---test_lambda_handler_003---")
+        event = initCommon.readFileToJson('test/function/input001.json')
+        
+        # 追加⇨削除
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/delete.sql"), { "mailSendId" : 1 })
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/insertFix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/update.sql"), { "mailSendId" : 1 })
+        RDS.execute(initCommon.getQuery("test/sql/m_mail_send/insertFix002.sql"))
+        RDS.commit()
+        
+        # 実行
         result = lambda_function.lambda_handler(event, None)
 
         print ("================ result ================")
         print (result)
 
+        resultJson = json.loads(result)
+        for r in resultJson["records"]:
+            if r["mailSendId"] == 1:
+                self.assertEqual(r["version"], 1)
+                self.assertEqual(r["mailSubject"], "閾値メールSubject2")

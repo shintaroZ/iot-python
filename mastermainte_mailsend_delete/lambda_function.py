@@ -20,15 +20,18 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
+MAIL_SEND_SEQ = "mailSendSeq"
 MAIL_SEND_ID = "mailSendId"
-DELETE_COUNT = "deleteCount"
+DELETE_FLG = "deleteFlg"
 EMAIL_ADDRESS = "emailAddress"
 SEND_WEEK_TYPE = "sendWeekType"
 SEND_FREQUANCY = "sendFrequancy"
 SEND_TIME_FROM = "sendTimeFrom"
 SEND_TIME_TO = "sendTimeTo"
 MAIL_SUBJECT = "mailSubject"
-MAIL_TEXT = "mailText"
+MAIL_TEXT_HEADER = "mailTextHeader"
+MAIL_TEXT_BODY = "mailTextBody"
+MAIL_TEXT_FOOTER = "mailTextFooter"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -119,9 +122,9 @@ def initConfig(clientName):
 # --------------------------------------------------
 # 起動パラメータに共通情報を付与して返却する。
 # --------------------------------------------------
-def createDeleteCountParams(event, deleteCount):
+def createDeleteFlgParams(event, deleteFlg):
 
-    event[DELETE_COUNT] = deleteCount
+    event[DELETE_FLG] = deleteFlg
     return createCommonParams(event)
 
 # --------------------------------------------------
@@ -142,22 +145,17 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
+    # setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ削除開始 : %s' % event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
-    # マスタselect
-    result = rds.fetchone(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
-                          , {MAIL_SEND_ID : event[MAIL_SEND_ID]})
-    
-    # 削除回数
-    deleteCount = 1 if result is None else result[DELETE_COUNT] + 1
     try:
         # メール通知マスタの論理削除
-        LOGGER.info("メール通知マスタの論理削除 [%d, %d]" % (event[MAIL_SEND_ID], deleteCount))
-        rds.execute(initCommon.getQuery("sql/m_mail_send/update.sql"), createDeleteCountParams(event, deleteCount))
+        LOGGER.info("メール通知マスタの論理削除 [%d]" % (event[MAIL_SEND_ID]))
+        rds.execute(initCommon.getQuery("sql/m_mail_send/update.sql"), createDeleteFlgParams(event, 1))
  
     except Exception as ex:
         LOGGER.error("削除に失敗しました。ロールバックします。")

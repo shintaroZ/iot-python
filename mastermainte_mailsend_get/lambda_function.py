@@ -20,14 +20,18 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
+MAIL_SEND_SEQ = "mailSendSeq"
 MAIL_SEND_ID = "mailSendId"
+DELETE_FLG = "deleteFlg"
 EMAIL_ADDRESS = "emailAddress"
 SEND_WEEK_TYPE = "sendWeekType"
 SEND_FREQUANCY = "sendFrequancy"
 SEND_TIME_FROM = "sendTimeFrom"
 SEND_TIME_TO = "sendTimeTo"
 MAIL_SUBJECT = "mailSubject"
-MAIL_TEXT = "mailText"
+MAIL_TEXT_HEADER = "mailTextHeader"
+MAIL_TEXT_BODY = "mailTextBody"
+MAIL_TEXT_FOOTER = "mailTextFooter"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"

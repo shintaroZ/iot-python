@@ -1,9 +1,8 @@
 update `M_MAIL_SEND` set
-    `DELETE_COUNT` = %(deleteCount)d
+    `DELETE_FLG` = %(deleteFlg)d
     , `UPDATED_AT` = '%(updatedAt)s'
     , `UPDATED_USER` = '%(updatedUser)s'
-    , `VERSION` = VERSION + 1
 where
     MAIL_SEND_ID = '%(mailSendId)s'
-and DELETE_COUNT = 0
+and DELETE_FLG = 0
 ;

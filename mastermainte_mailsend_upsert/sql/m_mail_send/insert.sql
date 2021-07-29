@@ -27,9 +27,9 @@ values (
     , '%(sendTimeFrom)s'
     , '%(sendTimeTo)s'
     , '%(mailSubject)s'
-    '%(values_mailTextHeader)s'
+    %(values_mailTextHeader)s
     , '%(mailTextBody)s'
-    '%(values_mailTextFooter)s'
+    %(values_mailTextFooter)s
     , '%(createdAt)s'
     , '%(updatedUser)s'
 )
