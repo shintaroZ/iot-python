@@ -24,27 +24,6 @@
 			]
 		},
 		{
-			"deviceId": "700400014-F6CA332A",
-			"requestTimeStamp": "2021-07-05 12:00:00.000",
-			"records": [
-				{
-					"sensorId": "s1001",
-					"timeStamp": "2021-07-05 03:00:00.000",
-					"value": 4567
-				},
-				{
-					"sensorId": "s1002",
-					"timeStamp": "2021-07-05 03:00:00.000",
-					"value": 5678
-				},
-				{
-					"sensorId": "s1001",
-					"timeStamp": "2021-07-05 03:10:00.000",
-					"value": 6789
-				}
-			]
-		},
-		{
 			"deviceId": "700400015-66DEF1DE",
 			"requestTimeStamp": "2021-07-05 12:30:00.000",
 			"records": [

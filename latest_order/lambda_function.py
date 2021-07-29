@@ -35,7 +35,6 @@ DB_USER = "hoge"
 DB_PASSWORD = "hoge"
 DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
-ROW_LOCK_TIMEOUT = 50
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
@@ -80,12 +79,6 @@ def setDbConnectTimeout(dbConnectTimeout):
     global DB_CONNECT_TIMEOUT
     DB_CONNECT_TIMEOUT = int(dbConnectTimeout)
 
-
-def setRowLockTimeout(rowLockTimeout):
-    global ROW_LOCK_TIMEOUT
-    ROW_LOCK_TIMEOUT = int(rowLockTimeout)
-
-
 def setRetryMaxCount(retryMaxCount):
     global RETRY_MAX_COUNT
     RETRY_MAX_COUNT = int(retryMaxCount)
@@ -115,7 +108,6 @@ def initConfig(clientName):
         setDbPassword(config_ini['rds setting']['password'])
         setDbName(config_ini['rds setting']['db'])
         setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
-        setRowLockTimeout(config_ini['rds setting']['innodb_lock_wait_timeout'])
         setRetryMaxCount(config_ini['rds setting']['retryMaxcount'])
         setRetryInterval(config_ini['rds setting']['retryinterval'])
     except Exception as e:
@@ -133,9 +125,6 @@ def getMasterDataCollection(rds, paramDeviceId, paramSensorId):
     }
     query = initCommon.getQuery("sql/m_data_collection/findbyId.sql")
     try:
-        # 一度に複数クエリは発行出来ないので別出し
-        rds.execute("set innodb_lock_wait_timeout = %d" % int(ROW_LOCK_TIMEOUT))
-        rds.execute("begin")
         result = rds.fetchone(query, params)
         if result is None:
             LOGGER.error("センサ振分けマスタに未定義のデータを受信しました。(%s / %s)" % (paramDeviceId, paramSensorId));
@@ -180,7 +169,7 @@ def bulkInsert(rds, valuesArray, query):
     if 0 < len(valuesArray):
         p_values = ",".join(valuesArray)
         params = {'p_values': p_values}
-        rds.execute(query, params)
+        rds.execute(query, params, RETRY_MAX_COUNT, RETRY_INTERVAL)
     else:
         LOGGER.debug("更新対象なし")
 

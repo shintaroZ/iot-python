@@ -21,8 +21,7 @@ and not exists (
 	from
 		M_DATA_COLLECTION mdcSub
 	where
-		mdc.DATA_COLLECTION_SEQ = mdcSub.DATA_COLLECTION_SEQ
-	and mdc.DEVICE_ID = mdcSub.DEVICE_ID
+		mdc.DEVICE_ID = mdcSub.DEVICE_ID
 	and mdc.SENSOR_ID = mdcSub.SENSOR_ID
 	and mdc.VERSION < mdcSub.VERSION
     )

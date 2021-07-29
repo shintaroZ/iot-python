@@ -36,8 +36,16 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_getMasterSensorDistribution_001(self):
         print("---test_getMasterSensorDistribution_001---")
         event = initCommon.readFileToJson('test/function/input001.json')
+        
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.commit()
+        
         result = lambda_function.getMasterDataCollection(RDS, "700400015-66DEF1DE", "s001")
-        self.assertEqual(result['sensorName'], "温度センサ")
+        self.assertEqual(result['sensorName'], "温度testSensor")
 
     # ----------------------------------------------------------------------
     # getMasterDataCollection()の正常系テスト
@@ -45,7 +53,6 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_getMasterSensorDistribution_002(self):
         print("---test_getMasterSensorDistribution_002---")
-        event = initCommon.readFileToJson('test/function/input001.json')
         with self.assertRaises(SystemExit):
             lambda_function.getMasterDataCollection(RDS, "700400015-66DEF1DE", "xxxxx")
 
@@ -81,6 +88,15 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_lambda_handler_001(self):
         print("---test_lambda_handler_001---")
 
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.commit()
+
         # 公開DBクリア
         RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
                     , { "tableName": "T_PUBLIC_TIMESERIES"
@@ -94,13 +110,13 @@ class LambdaFunctionTest(unittest.TestCase):
 
         # assert用にSelect
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/02/16 21:56:38.895" })
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 4
+                                , { "p_dataCollectionSeq": 1
                                    , "p_receivedDateTime": "2021/02/16 21:56:38.895" })
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/02/16 21:57:38.895" })
         self.assertEqual(result1["sensorValue"], 12.31)
         self.assertEqual(result2["sensorValue"], 23.56)
@@ -113,9 +129,18 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_lambda_handler_002(self):
         print("---test_lambda_handler_002---")
 
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.commit()
+        
         # 公開DB登録
         RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/upsert.sql")
-                    , { "p_dataCollectionSeq": 3
+                    , { "p_dataCollectionSeq": 0
                        , "p_receivedDateTime": "2021/02/16 21:56:38.895"
                        , "p_sensorValue": 0.12
                        , "p_createdDateTime": "2021/02/16 00:00:00" }
@@ -141,6 +166,15 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_lambda_handler_003(self):
         print("---test_lambda_handler_003---")
 
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.commit()
+        
         # 公開DBクリア
         RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
                     , { "tableName": "T_PUBLIC_TIMESERIES"
@@ -153,27 +187,27 @@ class LambdaFunctionTest(unittest.TestCase):
         result = lambda_function.lambda_handler(event, None)
 
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
 
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 4
+                                , { "p_dataCollectionSeq": 1
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
 
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/07/05 12:10:00" })
 
         result4 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
 
         result5 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 4
+                                , { "p_dataCollectionSeq": 1
                                    , "p_receivedDateTime": "2021/07/05 12:30:00" })
 
         result6 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 3
+                                , { "p_dataCollectionSeq": 0
                                    , "p_receivedDateTime": "2021/07/05 12:40:00" })
 
         self.assertEqual(result1["sensorValue"], 12.34)
@@ -189,11 +223,24 @@ class LambdaFunctionTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     # lambda_handler()の正常系テスト
     # s003の蓄積対象外の場合、dbに登録されないこと
-    # s009のBoolean型の場合、Falseは0、Trueは1で登録されること。
+    # s004のBoolean型の場合、Falseは0、Trueは1で登録されること。
     # ----------------------------------------------------------------------
     def test_lambda_handler_004(self):
         print("---test_lambda_handler_004---")
 
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix003.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix003.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix004.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix004.sql"))
+        RDS.commit()
+        
         # 公開DBクリア
         RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
                     , { "tableName": "T_PUBLIC_TIMESERIES"
@@ -206,15 +253,15 @@ class LambdaFunctionTest(unittest.TestCase):
         result = lambda_function.lambda_handler(event, None)
 
         result1 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 5
+                                , { "p_dataCollectionSeq": 2
                                    , "p_receivedDateTime": "2021/07/05 12:00:00" })
 
         result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 6
+                                , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:10:00" })
 
         result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_public_timeseries/select.sql")
-                                , { "p_dataCollectionSeq": 6
+                                , { "p_dataCollectionSeq": 3
                                    , "p_receivedDateTime": "2021/07/05 12:12:00" })
         self.assertEqual(result1, None)
         self.assertEqual(result2["sensorValue"], 1)
@@ -231,6 +278,19 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_lambda_handler_005(self):
         print("---test_lambda_handler_005---")
 
+        # マスタメンテナンス
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix002.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix003.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix003.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix004.sql"))
+        RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix004.sql"))
+        RDS.commit()
+        
         # 公開DBクリア
         RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
                     , { "tableName": "T_PUBLIC_TIMESERIES"
@@ -250,7 +310,7 @@ class LambdaFunctionTest(unittest.TestCase):
                                    , "p_occurredDateTimeEnd":endDt})
 
         self.assertEqual(result1[0]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサID:s001 値:XXXXX)")
-        self.assertEqual(result1[1]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサID:s008 値:ZZZZZ)")
+        self.assertEqual(result1[1]["message"], "センサの値が不正です。(デバイスID:700400015-66DEF1DE 送信日時:2021-07-05 12:00:00.000 センサID:s004 値:ZZZZZ)")
 
         print ("============ result ============")
         print (result)

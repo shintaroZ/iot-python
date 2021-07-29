@@ -16,12 +16,12 @@
 					"value": 2345
 				},
 				{
-					"sensorId": "s008",
+					"sensorId": "s004",
 					"timeStamp": "2021-07-05 03:10:00.000",
 					"value": "False"
 				},
 				{
-					"sensorId": "s008",
+					"sensorId": "s004",
 					"timeStamp": "2021-07-05 03:12:00.000",
 					"value": "True"
 				}
