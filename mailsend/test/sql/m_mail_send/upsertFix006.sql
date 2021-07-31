@@ -1,4 +1,4 @@
-/* 平日 */
+/* ver1 */
 insert
 into `M_MAIL_SEND`(
     `MAIL_SEND_SEQ`
@@ -18,19 +18,19 @@ into `M_MAIL_SEND`(
     , `UPDATED_USER`
 )
 values (
-    0
+    1
     , '0'
     , '0'
-    , 0
-    , 'shintaro.otoi@gmail.com'
+    , 1
+    , 'shintaro_otoi@icloud.com'
+    , '0'
     , '1'
-    , '0'
     , '000000'
     , '235959'
-    , '閾値メールSubject'
-    , '閾値メールHeader'
-    , '閾値メールBody'
-    , '閾値メールFooter'
+    , '閾値メールSubject2'
+    , '閾値メールHeader2'
+    , '閾値メールBody2'
+    , '閾値メールFooter2'
     , CURRENT_TIMESTAMP
     , 'devUser'
 )

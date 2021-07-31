@@ -19,7 +19,7 @@ into `M_MAIL_SEND`(
 )
 values (
     0
-    , '1'
+    , '0'
     , '0'
     , 0
     , 'shintaro.otoi@gmail.com'

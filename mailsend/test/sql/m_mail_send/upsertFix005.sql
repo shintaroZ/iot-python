@@ -1,4 +1,4 @@
-/* 平日 */
+/* メールアドレス不正 */
 insert
 into `M_MAIL_SEND`(
     `MAIL_SEND_SEQ`
@@ -22,9 +22,9 @@ values (
     , '0'
     , '0'
     , 0
-    , 'shintaro.otoi@gmail.com'
-    , '1'
+    , '**************@gmail.com'
     , '0'
+    , '1'
     , '000000'
     , '235959'
     , '閾値メールSubject'

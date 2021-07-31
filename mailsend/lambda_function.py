@@ -320,12 +320,12 @@ def lambda_handler(event, context):
                             % (i, msRecord[SEND_FREQUANCY], msRecord[EMAIL_ADDRESS]) )
                 print("\r\n".join(mailTextArray))
                 try:
-                    # メール送信
-    #                 send_mail(sesClient
-    #                           , SOURCE_ADDRESS
-    #                           , beforeMap[EMAIL_ADDRESS]
-    #                           , beforeMap[MAIL_SUBJECT]
-    #                           , "\r\n".join(mailTextArray))
+                    # メール送信 SOURCE_ADDRESS
+                    send_mail(sesClient
+                              , 'shintaro.otoi@gmail.com'
+                              , msRecord[EMAIL_ADDRESS]
+                              , msRecord[MAIL_SUBJECT]
+                              , "\r\n".join(mailTextArray))
                     # ステータス更新
                     rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
                             ,createMailSendManagedParams(SendStatusEnum.SendSuccess, sourceRecords[i], msRecord[SEND_FREQUANCY]))
