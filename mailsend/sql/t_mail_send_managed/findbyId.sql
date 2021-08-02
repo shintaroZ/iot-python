@@ -36,6 +36,7 @@ from
         and ml.LIMIT_SUB_NO = tmsm.LIMIT_SUB_NO
 where
 	tmsm.MAIL_SEND_SEQ = %(mailSendSeq)d
+and	tmsm.SEND_STATUS = 0
 order by
     tmsm.DETECTION_DATETIME
     , tmsm.DATA_COLLECTION_SEQ
