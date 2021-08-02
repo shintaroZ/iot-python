@@ -322,7 +322,7 @@ def lambda_handler(event, context):
                 try:
                     # メール送信 SOURCE_ADDRESS
                     send_mail(sesClient
-                              , 'shintaro.otoi@gmail.com'
+                              , SOURCE_ADDRESS
                               , msRecord[EMAIL_ADDRESS]
                               , msRecord[MAIL_SUBJECT]
                               , "\r\n".join(mailTextArray))
