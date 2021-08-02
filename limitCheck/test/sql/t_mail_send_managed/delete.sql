@@ -1,0 +1,1 @@
+delete from T_MAIL_SEND_MANAGED;
