@@ -8,6 +8,7 @@ import boto3
 from botocore.exceptions import ClientError
 import re # 正規表現
 from enum import IntEnum
+from pymysql import TIME
 
 # 送信ステータス
 class SendStatusEnum(IntEnum):
@@ -16,10 +17,15 @@ class SendStatusEnum(IntEnum):
     SendSuccess = 2         # メール送信成功
     SendFailured = 3        # メール送信失敗
 
-# 送信頻度
-class SendFrequancyEnum(IntEnum):
-    EachTime = 0    # 都度
-    Summary = 1     # まとめて1回
+# 閾値成立回数条件
+class LimitCountTypeEnum(IntEnum):
+    Continue = 0    # 継続
+    Save = 1        # 累積
+    
+# 後続アクション
+class NextActionEnum(IntEnum):
+    No = 0          # なし
+    MailSend = 1    # メール通知
 
 # global
 LOGGER = None
@@ -34,7 +40,16 @@ DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
+# 起動パラメータ定数
+CLIENT_NAME = "clientName"
+TIME_STAMP = "timeStamp"
+
 # カラム名定数
+LIMIT_HIT_MANAGED_SEQ = "limitHitManagedSeq"
+LIMIT_HIT_STATUS = "limitHitStatus"
+BEFORE_DETECTION_DATETIME = "beforeDetectionDateTime"
+BEFORE_MAIL_SEND_DATETIME = "beforeMailSendDateTime"
+
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
 DETECTION_DATETIME = "detectionDateTime"
 LIMIT_SUB_NO = "limitSubNo"
@@ -85,25 +100,11 @@ VERSION = "version"
 
 SENSOR_VALUE = "sensorValue"
 
+LIMIT_CHECL_START_DATETIME = "limitCheckStartDateTime"
+
 # データ型定数
 MAX_TYNYINT_UNSIGNED = 255
 MAX_SMALLINT_UNSIGNED = 65535
-
-# 埋め込み文字辞書
-REPLACE_STR_MAP = {
-    "@検知日時@" : DETECTION_DATETIME
-    , "@センサ値@" : SENSOR_VALUE
-    , "@デバイスID@" : DEVICE_ID
-    , "@センサID@" : SENSOR_ID
-    , "@センサ名@" : SENSOR_NAME
-    , "@単位@" : UNIT
-    , "@閾値成立回数条件@" : LIMIT_COUNT_TYPE
-    , "@閾値成立回数@" : LIMIT_COUNT
-    , "@閾値成立回数リセット@" : LIMIT_COUNT_RESET_RANGE
-    , "@通知間隔@" : ACTION_RANGE
-    , "@閾値判定区分@" : LIMIT_JUDGE_TYPE
-    , "@閾値@" : LIMIT_VALUE
-    }
 
 # setter
 def setLogger(logger):
@@ -198,25 +199,58 @@ def convertMeilText(mailTextBody, record):
     return mailTextBody
 
 # --------------------------------------------------
-# メール通知管理テーブル更新用のパラメータ作成
+# デバイスIDとセンサIDのパラメータを作成して返却する。
 # --------------------------------------------------
-def createMailSendManagedParams(sendStatus, record, sendFrequancy):
-
-
+def createMasterMainteParams(deviceId, sensorId):
+    
     params = {}
-    params[SEND_STATUS] = sendStatus
+    params[DEVICE_ID] = deviceId
+    params[SENSOR_ID] = sensorId
+    
+    return createCommonParams(params)
+
+# --------------------------------------------------
+# デバイスIDとセンサIDのパラメータを作成して返却する。
+# --------------------------------------------------
+def createPublicTimeSeriesParams(timeStamp):
+    
+    params = {}
+    params[TIME_STAMP] = timeStamp
+    
+    return createCommonParams(params)
+
+# --------------------------------------------------
+# 閾値管理登録用のパラメータを作成して返却する。
+# --------------------------------------------------
+def createLimitHitManagedParams(limitHitManagedSeq, dataCollectionSeq, detectionDateTime, limitSubNo, limitHitStatus = 0):
+    
+    params = {}
+    params[LIMIT_HIT_MANAGED_SEQ] = limitHitManagedSeq
+    params[DATA_COLLECTION_SEQ] = dataCollectionSeq
+    params[DETECTION_DATETIME] = detectionDateTime
+    params[LIMIT_SUB_NO] = limitSubNo
+    params[LIMIT_HIT_STATUS] = limitHitStatus
+    
+    return createCommonParams(params)
+
+# --------------------------------------------------
+# データ定義マスタシーケンスと閾値通番のパラメータを作成して返却する。
+# --------------------------------------------------
+def createSeqLimitSubParams(dataCollectionSeq, limitSubNo):
+    
+    params = {}
+    params[DATA_COLLECTION_SEQ] = dataCollectionSeq
+    params[LIMIT_SUB_NO] = limitSubNo
+    
+    return createCommonParams(params)
+
+# --------------------------------------------------
+# 起動パラメータに共通情報を付与して返却する。
+# --------------------------------------------------
+def createCommonParams(params):
+
+    params[CREATED_AT] = initCommon.getSysDateJst()
     params[UPDATED_AT] = initCommon.getSysDateJst()
-
-    whereArray = []
-    whereArray.append("MAIL_SEND_SEQ = %d" % record[MAIL_SEND_SEQ])
-    # 送信頻度パラメータに応じて条件追記
-    if sendFrequancy == SendFrequancyEnum.EachTime:
-        whereArray.append("DATA_COLLECTION_SEQ = %d" % record[DATA_COLLECTION_SEQ])
-        whereArray.append("DETECTION_DATETIME = '%s'" % record[DETECTION_DATETIME])
-        whereArray.append("LIMIT_SUB_NO = %d" % record[LIMIT_SUB_NO])
-
-    params["whereParams"] = (" AND ".join(whereArray))
-
     return params
 
 #####################
@@ -233,6 +267,95 @@ def lambda_handler(event, context):
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
+    # # 閾値判定対象データ取得
+    # mRecords = rds.fetchall(initCommon.getQuery("sql/m_data_collection/findbyId.sql"))
+    
 
+
+    receivedMessages = event["receivedMessages"][0]
+    sortedRecords = sorted(receivedMessages['records'], key=lambda x:x['sensorId'])
+    beforeSensorId = ""
+    limitInfoRecord = {}
+    # 起動パラメータ分loop
+    for i in range(len(sortedRecords)):
+        print(sortedRecords[i])
+        
+        sensorId = sortedRecords[i][SENSOR_ID]
+        # レコード一覧.タイムスタンプはUTCなのでJSTへ変換
+        cnvTimeStamp = datetime.datetime.strptime(sortedRecords[i][TIME_STAMP], '%Y-%m-%d %H:%M:%S.%f')
+        cnvTimeStamp = cnvTimeStamp + datetime.timedelta(seconds=32400)
+        # yyyy/MM/dd HH:mm:ss.f形式の文字列に変更
+        strTimeStamp = cnvTimeStamp.strftime('%Y/%m/%d %H:%M:%S.%f')
+        
+        # 初回 or センサが切り替わったタイミング
+        if i == 0 or (beforeSensorId != sensorId):
+            
+            # 閾値情報取得
+            limitInfoRecord = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findbyId.sql")
+                                           , createMasterMainteParams(receivedMessages[DEVICE_ID], sortedRecords[i][SENSOR_ID]))
+            print(limitInfoRecord)
+            
+        if limitInfoRecord is None:
+            LOGGER.warn("閾値情報の取得に失敗しました。[%s, %s]" % (receivedMessages[DEVICE_ID], sortedRecords[i][SENSOR_ID]))
+            continue
+        
+        # 過去データ取得
+        publicRecords = rds.fetchall(initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
+                                     , createPublicTimeSeriesParams(strTimeStamp))
+        print(publicRecords)
+        
+        # 閾値判定 todo
+        isLimmit = False
+        
+        # 閾値成立判定したか
+        if (False):
+            LOGGER.debug("閾値成立なし [%s, %s]" % (limitInfoRecord[DATA_COLLECTION_SEQ], sortedRecords[i][TIME_STAMP]))
+            continue
+        
+        # シーケンス取得
+        limitHitManagedSeq = 0
+        seqResult = rds.fetchone(initCommon.getQuery("sql/m_seq/nextval.sql"), {"p_seqType" : 3})
+        limitHitManagedSeq = seqResult["nextSeq"]
+        LOGGER.info("閾値成立管理シーケンスの新規採番 [%d]" % seqResult["nextSeq"])
+
+        # 閾値成立管理へ登録
+        rds.execute(initCommon.getQuery("sql/t_limit_hit_managed/upsert.sql")
+                    , createLimitHitManagedParams(limitHitManagedSeq
+                                                  , limitInfoRecord[DATA_COLLECTION_SEQ]
+                                                  , strTimeStamp
+                                                  , limitInfoRecord[LIMIT_SUB_NO])
+                    , RETRY_MAX_COUNT, RETRY_INTERVAL)
+        
+        mailSendArray = []
+        # 後続アクション判定
+        if limitInfoRecord[NEXT_ACTION] == NextActionEnum.No:
+            LOGGER.debug("後続アクションなし [%s, %s]" % (limitInfoRecord[DATA_COLLECTION_SEQ], sortedRecords[i][TIME_STAMP]))
+            continue
+        
+        elif limitInfoRecord[NEXT_ACTION] == NextActionEnum.MailSend:
+
+            # メール通知管理よりデータ定義マスタシーケンスと閾値通番が一致する最新の
+            mailSendArray = rds.fetchall(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
+                                         ,createSeqLimitSubParams(limitInfoRecord[DATA_COLLECTION_SEQ]
+                                                                  , limitInfoRecord[LIMIT_SUB_NO]))
+            # # 通知間隔判定
+            # currentDateTime = initCommon.getSysDateJst() 
+            # currentDateTimeAppend = currentDateTime + datetime.timedelta(seconds=limitInfoRecord[ACTION_RANGE] * 60)
+
+            # 通知先分loop
+            for msRecord in mailSendArray:
+                print(msRecord)
+                
+                # 閾値成立管理から
+                LOGGER.debug("")
+                msRecord[BEFORE_DETECTION_DATETIME]
+                limitInfoRecord[ACTION_RANGE]
+            # print("現在時刻 : %s  30s加算 : %s" % (currentDateTime, currentDateTimeAppend) )
+            
+            # if limitInfoRecord[ACTION_RANGE] ==
+        
+    # commit
+    rds.commit()
+    
     # close
     del rds

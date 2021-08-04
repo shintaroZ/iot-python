@@ -1,34 +1,28 @@
+/* 時系列より閾値成立管理からセンサの受信タイムスタンプ以前のものを抽出 */
 select
     tpt.DATA_COLLECTION_SEQ as dataCollectionSeq
     , tpt.RECEIVED_DATETIME as receivedDatetime
     , tpt.SENSOR_VALUE as sensorValue
     , tpt.CREATED_AT as createdAt
-
-    , mlc.LIMIT_COUNT_TYPE as limitCountType
-    , mlc.LIMIT_COUNT as limitCount
-    , mlc.LIMIT_COUNT_RESET_RANGE as limitCountResetRange
-    , mlc.ACTION_RANGE as actionRange
-    , mlc.NEXT_ACTION as nextAction
-
-    , ml.LIMIT_SUB_NO as limitSubNo
-    , ml.LIMIT_JUDGE_TYPE as limitJudgeType
-    , ml.LIMIT_VALUE as limitValue
 from
-    T_PUBLIC_TIMESERIES tpt
-    inner join M_DATA_COLLECTION mdc
-        on tpt.DATA_COLLECTION_SEQ = mdc.DATA_COLLECTION_SEQ
-    inner join M_LINK_FLG mlf
-        on tpt.DATA_COLLECTION_SEQ = mlf.DATA_COLLECTION_SEQ
-        and mlf.LIMIT_CHECK_FLG = 1
-    inner join M_LIMIT_CHECK mlc
-        on tpt.DATA_COLLECTION_SEQ = mlc.DATA_COLLECTION_SEQ
-    inner join M_LIMIT ml
-        on tpt.DATA_COLLECTION_SEQ = ml.DATA_COLLECTION_SEQ
-    left outer join T_LIMIT_CHECK_TEMP tlct
-        on tpt.DATA_COLLECTION_SEQ = tlct.DATA_COLLECTION_SEQ
-
+    T_PUBLIC_TIMESERIES tpt 
+    left outer join T_LIMIT_HIT_MANAGED tlhm
+        on tpt.DATA_COLLECTION_SEQ = tlhm.DATA_COLLECTION_SEQ
+        and not exists(
+            select
+                1
+            from
+                T_LIMIT_HIT_MANAGED tlhmSub
+            where
+                tlhm.DATA_COLLECTION_SEQ = tlhmSub.DATA_COLLECTION_SEQ
+            and tlhm.DETECTION_DATETIME < tlhm.DATA_COLLECTION_SEQ
+        )
+    
 where
-    ifnull(tlct.LIMIT_CHECK_START_DATE , DATE_FORMAT('19000101000000', '%%Y%%m%%d%%k%%i%%s') ) < tpt.RECEIVED_DATETIME
+    tpt.DATA_COLLECTION_SEQ = 218
+and tpt.RECEIVED_DATETIME <= '%(timeStamp)s'   /* センサの受信タイムスタンプ以前の過去分 */
+and ifnull(tlhm.DETECTION_DATETIME, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s') ) < tpt.RECEIVED_DATETIME    /* 閾値成立管理より新しいもの */
+
 order by
-    tpt.DATA_COLLECTION_SEQ
-    , tpt.RECEIVED_DATETIME;
+    tpt.RECEIVED_DATETIME
+
