@@ -10,20 +10,24 @@ select
     , ml.LIMIT_SUB_NO as limitSubNo
     , ml.LIMIT_JUDGE_TYPE as limitJudgeType
     , ml.LIMIT_VALUE as limitValue
-    , ifnull( 
-        tlhb.LIMIT_HIT_DATETIME
-        , str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')
-    ) as limitHitDatetime 
 from
-    M_DATA_COLLECTION mdc 
-    inner join M_LIMIT_CHECK mlc 
-        on mdc.DATA_COLLECTION_SEQ = mlc.DATA_COLLECTION_SEQ 
-    inner join M_LIMIT ml 
-        on mdc.DATA_COLLECTION_SEQ = ml.DATA_COLLECTION_SEQ 
-    left outer join T_LIMIT_HIT_BEFORE tlhb
-        on mdc.DATA_COLLECTION_SEQ = tlhb.DATA_COLLECTION_SEQ 
+    M_DATA_COLLECTION mdc
+    inner join M_LIMIT_CHECK mlc
+        on mdc.DATA_COLLECTION_SEQ = mlc.DATA_COLLECTION_SEQ
+    inner join M_LIMIT ml
+        on mdc.DATA_COLLECTION_SEQ = ml.DATA_COLLECTION_SEQ
 where
     mdc.DELETE_FLG = 0
 and mdc.DEVICE_ID = '%(deviceId)s'
 and mdc.SENSOR_ID = '%(sensorId)s'
+and not exists (
+    select
+        1
+    from
+        M_DATA_COLLECTION mdcSub
+    where
+        mdc.DEVICE_ID = mdcSub.DEVICE_ID
+    and mdc.SENSOR_ID = mdcSub.SENSOR_ID
+    and mdc.VERSION < mdcSub.VERSION
+)
 ;

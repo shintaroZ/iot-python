@@ -5,7 +5,7 @@ select
     , tpt.SENSOR_VALUE as sensorValue
     , tpt.CREATED_AT as createdAt
 from
-    T_PUBLIC_TIMESERIES tpt 
+    T_PUBLIC_TIMESERIES tpt
     left outer join T_LIMIT_HIT_MANAGED tlhm
         on tpt.DATA_COLLECTION_SEQ = tlhm.DATA_COLLECTION_SEQ
         and not exists(
@@ -17,12 +17,13 @@ from
                 tlhm.DATA_COLLECTION_SEQ = tlhmSub.DATA_COLLECTION_SEQ
             and tlhm.DETECTION_DATETIME < tlhm.DATA_COLLECTION_SEQ
         )
-    
+
 where
-    tpt.DATA_COLLECTION_SEQ = 218
+    tpt.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
 and tpt.RECEIVED_DATETIME <= '%(timeStamp)s'   /* センサの受信タイムスタンプ以前の過去分 */
 and ifnull(tlhm.DETECTION_DATETIME, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s') ) < tpt.RECEIVED_DATETIME    /* 閾値成立管理より新しいもの */
+%(whereParam)s
 
 order by
-    tpt.RECEIVED_DATETIME
+    tpt.RECEIVED_DATETIME desc
 
