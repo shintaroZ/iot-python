@@ -22,7 +22,7 @@ values (
     , '0'
     , '0'
     , 0
-    , '**************@gmail.com'
+    , 'aaaaaaaeeeeeeuuuuu'
     , '0'
     , '1'
     , '000000'

@@ -7,5 +7,8 @@ select
 from
     T_MAIL_SEND_MANAGED tmsm
 where
-    tmsm.MAIL_SEND_MANAGED_SEQ = %(mailSendManagedSeq)d
+    tmsm.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
+and tmsm.DETECTION_DATETIME = '%(detectionDateTime)s'
+and tmsm.LIMIT_SUB_NO = %(limitSubNo)d
+and tmsm.MAIL_SEND_SEQ = %(mailSendSeq)d
  ;
