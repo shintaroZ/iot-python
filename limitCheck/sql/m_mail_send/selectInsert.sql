@@ -18,6 +18,7 @@ from
     T_LIMIT_HIT_MANAGED tlhm
     left outer join T_MAIL_SEND_MANAGED tmsm
         on tlhm.DATA_COLLECTION_SEQ = tmsm.DATA_COLLECTION_SEQ
+        and tmsm.MAIL_SEND_SEQ = %(mailSendSeq)d 
         and tlhm.LIMIT_SUB_NO = tmsm.LIMIT_SUB_NO
         and not exists (
             select
@@ -27,6 +28,7 @@ from
             where
                 tmsm.DATA_COLLECTION_SEQ = tmsmSub.DATA_COLLECTION_SEQ
                 and tmsm.LIMIT_SUB_NO = tmsmSub.LIMIT_SUB_NO
+                and tmsm.MAIL_SEND_SEQ = tmsmSub.MAIL_SEND_SEQ
                 and tmsm.DETECTION_DATETIME < tmsmSub.DETECTION_DATETIME
         )
 where

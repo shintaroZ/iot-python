@@ -310,7 +310,7 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
-#     setLogger(initCommon.getLogger("DEBUG"))
+    # setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('閾値判定機能開始 : %s' % event)
 
