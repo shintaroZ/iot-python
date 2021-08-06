@@ -8,7 +8,7 @@ from
     left outer join T_MAIL_SEND_MANAGED tmsm
         on mms.MAIL_SEND_SEQ = tmsm.MAIL_SEND_SEQ
         and tmsm.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
-        and tmsm.LIMIT_SUB_NO = %(limitSubNo)d
+        %(whereParam)s
         and tmsm.SEND_STATUS = 2
         and not exists (
             select

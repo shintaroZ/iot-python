@@ -8,7 +8,7 @@ into `M_LINK_FLG` (
 values (
     2
     , '0'
-    , '0'
+    , '1'
     , '2021/07/28 16:30:31'
 )
 ON DUPLICATE KEY UPDATE

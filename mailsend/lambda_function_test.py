@@ -191,35 +191,5 @@ class LambdaFunctionTest(unittest.TestCase):
                                   , "limitSubNo" : 1
                                   , "mailSendSeq" : 0
                                 })
-        result2 = RDS.fetchone(initCommon.getQuery("test/sql/t_mail_send_managed/findbyId.sql")
-                              , {
-                                  "dataCollectionSeq" : 224
-                                  , "detectionDateTime" : '2021/07/20 13:10:00'
-                                  , "limitSubNo" : 2
-                                  , "mailSendSeq" : 0
-                                })
-        result3 = RDS.fetchone(initCommon.getQuery("test/sql/t_mail_send_managed/findbyId.sql")
-                              , {
-                                  "dataCollectionSeq" : 224
-                                  , "detectionDateTime" : '2021/07/20 13:20:00'
-                                  , "limitSubNo" : 2
-                                  , "mailSendSeq" : 0
-                                })
-        result6 = RDS.fetchone(initCommon.getQuery("test/sql/t_mail_send_managed/findbyId.sql")
-                              , {
-                                  "dataCollectionSeq" : 3
-                                  , "detectionDateTime" : '2021/07/21 09:00:00'
-                                  , "limitSubNo" : 1
-                                  , "mailSendSeq" : 1
-                                })
-        result7 = RDS.fetchone(initCommon.getQuery("test/sql/t_mail_send_managed/findbyId.sql")
-                              , {
-                                  "dataCollectionSeq" : 3
-                                  , "detectionDateTime" : '2021/07/21 09:10:00'
-                                  , "limitSubNo" : 1
-                                  , "mailSendSeq" : 1
-                                })
         self.assertEqual(result1["sendStatus"], 3)
-        self.assertEqual(result2["sendStatus"], 3)
-        self.assertEqual(result3["sendStatus"], 3)
 

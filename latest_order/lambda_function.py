@@ -312,6 +312,7 @@ def lambda_handler(event, context):
     isRecevery = False if "receveryFlg" not in event else True
 
     reReceivedMessages = []
+    reRecords = []
     for e in event["receivedMessages"]:
 
         # 親要素の取得
@@ -326,7 +327,6 @@ def lambda_handler(event, context):
         publicTableValues = []
         surveillanceValues = []
 
-        reRecords = []
         for record in sortedRecords:
             # 現在時刻取得
             nowDateTime = initCommon.getSysDateJst()
@@ -379,9 +379,8 @@ def lambda_handler(event, context):
             # 閾値判定ありの要素のみ戻り値に含める
             if limitCheckFlg == LimitCheckEnum.Valid:
                 reMap = {}
-                reMap["sensorId"] = sensorId
-                reMap["timeStamp"] = timeStamp
-                reMap["value"] = value
+                reMap["dataCollectionSeq"] = str(dataCollectionSeq)
+                reMap["receivedDatetime"] = cnvTimeStamp.strftime('%Y/%m/%d %H:%M:%S.%f')
                 reRecords.append(reMap)
 
             # 蓄積有無判定
@@ -416,18 +415,12 @@ def lambda_handler(event, context):
         bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
         rds.commit()
 
-        # 戻り値用に退避
-        tempTable = {}
-        tempTable["deviceId"] = deviceId
-        tempTable["requestTimeStamp"] = requestTimeStamp
-        tempTable["records"] = reRecords
-        reReceivedMessages.append(tempTable)
-
     # close
     del rds
 
     # 戻り値整形
     reEventTable = {}
-    reEventTable["clientName"] = event["clientName"]
-    reEventTable["receivedMessages"] = reReceivedMessages
+    if isRecevery == False:
+        reEventTable["clientName"] = event["clientName"]
+        reEventTable["records"] = reRecords
     return reEventTable

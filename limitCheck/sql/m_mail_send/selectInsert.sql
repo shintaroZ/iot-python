@@ -31,6 +31,6 @@ from
         )
 where
     tlhm.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
-and tlhm.LIMIT_SUB_NO = %(limitSubNo)d
+%(whereParam)s
 and ifnull(tmsm.DETECTION_DATETIME, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')) < tlhm.DETECTION_DATETIME
 and tlhm.DETECTION_DATETIME <= '%(timeStamp)s'

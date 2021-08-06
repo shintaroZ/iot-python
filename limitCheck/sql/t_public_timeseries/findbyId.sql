@@ -15,7 +15,7 @@ from
                 T_LIMIT_HIT_MANAGED tlhmSub
             where
                 tlhm.DATA_COLLECTION_SEQ = tlhmSub.DATA_COLLECTION_SEQ
-            and tlhm.DETECTION_DATETIME < tlhm.DATA_COLLECTION_SEQ
+            and tlhm.DETECTION_DATETIME < tlhmSub.DETECTION_DATETIME
         )
 
 where
