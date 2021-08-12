@@ -18,7 +18,7 @@ from
             where
                 tmsm.DATA_COLLECTION_SEQ = tmsmSub.DATA_COLLECTION_SEQ
                 and tmsm.MAIL_SEND_SEQ = tmsmSub.MAIL_SEND_SEQ
-                and tmsm.LIMIT_SUB_NO = tmsmSub.LIMIT_SUB_NO
+                %(whereSubParam)s
                 and tmsm.SEND_STATUS = tmsmSub.SEND_STATUS
                 and tmsm.DETECTION_DATETIME < tmsmSub.DETECTION_DATETIME
         )

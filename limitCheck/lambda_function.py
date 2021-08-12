@@ -258,6 +258,18 @@ def createLimitSubNoWhereParam(limitCheckResult, name):
     return param
 
 # --------------------------------------------------
+# 閾値通番の抽出条件のパラメータを作成
+# --------------------------------------------------
+def createLimitSubNoWhereSubParam(limitCheckResult, name, subName):
+
+    param = ""
+    if 0 < len(limitCheckResult):
+        param = "and %s.LIMIT_SUB_NO = %s.LIMIT_SUB_NO" % (name, subName)
+
+
+    return param
+
+# --------------------------------------------------
 # 閾値成立回数リセットの抽出条件のパラメータを作成
 # --------------------------------------------------
 def createLimitCountResetRangeWhereParam(limitCountResetRange, cnvTimeStamp):
@@ -279,7 +291,7 @@ def createLimitCountResetRangeWhereParam(limitCountResetRange, cnvTimeStamp):
 # --------------------------------------------------
 def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=None
                               , limitSubNo=None, timeStamp=None, mailSendSeq=None
-                              , sendStatus=None, whereParam=""):
+                              , sendStatus=None, whereParam="", whereSubParam=""):
 
     params = {}
     params[DEVICE_ID] = deviceId
@@ -290,6 +302,7 @@ def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=No
     params[MAIL_SEND_SEQ] = mailSendSeq
     params[SEND_STATUS] = sendStatus
     params["whereParam"] = whereParam
+    params["whereSubParam"] = whereSubParam
 
     return createCommonParams(params)
 
@@ -379,19 +392,20 @@ def lambda_handler(event, context):
             # メール通知管理より前回通知時刻取得
             mailSendArray = rds.fetchall(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
                                          ,createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
-                                                                    , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tmsm")))
-            # 現在時刻取得（タイムゾーン解除の為、再変換）
-            strDateTime = initCommon.getSysDateJst().strftime('%Y/%m/%d %H:%M:%S.%f')
-            currentDateTime = datetime.datetime.strptime(strDateTime, '%Y/%m/%d %H:%M:%S.%f')
+                                                                    , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tmsm")
+                                                                    , whereSubParam = createLimitSubNoWhereSubParam(limitCheckResult, "tmsm", "tmsmSub") ))
+            # 現在時刻取得（タイムゾーン解除の為、replace）
+            currentDateTime = initCommon.getSysDateJst().replace(tzinfo=None)
 
             # 通知先分loop
             for msRecord in mailSendArray:
 
                 appendDateTime = msRecord[BEFORE_MAIL_SEND_DATETIME] + datetime.timedelta(seconds=limitInfoArray[0][ACTION_RANGE] * 60)
-                LOGGER.debug("現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (currentDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")
-                                                                                                         , msRecord[BEFORE_MAIL_SEND_DATETIME].strftime("%Y/%m/%d %H:%M:%S.%f")
-                                                                                                         , limitInfoArray[0][ACTION_RANGE]
-                                                                                                         , appendDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")) )
+                LOGGER.info("メール通知シーケンス:[%d], 現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (msRecord[MAIL_SEND_SEQ]
+                                                                                                 , currentDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")
+                                                                                                 , msRecord[BEFORE_MAIL_SEND_DATETIME].strftime("%Y/%m/%d %H:%M:%S.%f")
+                                                                                                 , limitInfoArray[0][ACTION_RANGE]
+                                                                                                 , appendDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")) )
 
                 # 通知間隔判定
                 if appendDateTime <= currentDateTime:
@@ -404,6 +418,11 @@ def lambda_handler(event, context):
                                                                           , sendStatus = int(SendStatusEnum.Before))
                                                 , RETRY_MAX_COUNT
                                                 , RETRY_INTERVAL)
+                else:
+                    # 
+                    LOGGER.info("通知間隔範囲内の為、メール通知管理の登録をスキップします。[%d, %s, %d]" % (limitInfoArray[0][DATA_COLLECTION_SEQ]
+                                                                               , argsReceivedDatetime
+                                                                               , msRecord[MAIL_SEND_SEQ]))
 
     # commit
     rds.commit()

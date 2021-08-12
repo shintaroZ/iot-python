@@ -17,7 +17,7 @@ values (
     , 1
     , 3
     , 5
-    , 2
+    , 10
     , '1'
     , CURRENT_TIMESTAMP
     )

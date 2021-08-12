@@ -11,12 +11,12 @@ into `T_MAIL_SEND_MANAGED`(
 )
 values  (
     4
-    , '2021/07/20 13:00:00'
+    , '2021/08/05 11:59:00.000'
     , '1'
-    , 0
-    , '0'
+    , 72
+    , '2'
     , CURRENT_TIMESTAMP
-    , null
+    , CURRENT_TIMESTAMP
     , 0
 )
 on duplicate key update

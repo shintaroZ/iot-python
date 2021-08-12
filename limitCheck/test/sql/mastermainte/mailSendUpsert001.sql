@@ -20,10 +20,10 @@ into `M_MAIL_SEND`(
     , `UPDATED_USER`
 )
 values (
-    1
+    72
+    , '1'
     , '0'
-    , '0'
-    , 1
+    , 16
     , 'shintaro_otoi@icloud.com'
     , '0'
     , '1'
