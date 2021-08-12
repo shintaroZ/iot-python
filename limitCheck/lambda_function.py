@@ -401,7 +401,7 @@ def lambda_handler(event, context):
             for msRecord in mailSendArray:
 
                 appendDateTime = msRecord[BEFORE_MAIL_SEND_DATETIME] + datetime.timedelta(seconds=limitInfoArray[0][ACTION_RANGE] * 60)
-                LOGGER.info("メール通知シーケンス:[%d], 現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (msRecord[MAIL_SEND_SEQ]
+                LOGGER.debug("メール通知シーケンス:[%d], 現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (msRecord[MAIL_SEND_SEQ]
                                                                                                  , currentDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")
                                                                                                  , msRecord[BEFORE_MAIL_SEND_DATETIME].strftime("%Y/%m/%d %H:%M:%S.%f")
                                                                                                  , limitInfoArray[0][ACTION_RANGE]
@@ -419,7 +419,7 @@ def lambda_handler(event, context):
                                                 , RETRY_MAX_COUNT
                                                 , RETRY_INTERVAL)
                 else:
-                    # 
+                    # 通知間隔内はskip
                     LOGGER.info("通知間隔範囲内の為、メール通知管理の登録をスキップします。[%d, %s, %d]" % (limitInfoArray[0][DATA_COLLECTION_SEQ]
                                                                                , argsReceivedDatetime
                                                                                , msRecord[MAIL_SEND_SEQ]))

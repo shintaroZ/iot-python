@@ -16,7 +16,7 @@ values  (
     , 72
     , '2'
     , CURRENT_TIMESTAMP
-    , CURRENT_TIMESTAMP
+    , '2021/08/05 11:59:20.000'
     , 0
 )
 on duplicate key update

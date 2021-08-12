@@ -8,7 +8,6 @@ from
     left outer join T_MAIL_SEND_MANAGED tmsm
         on mms.MAIL_SEND_SEQ = tmsm.MAIL_SEND_SEQ
         and tmsm.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
-        %(whereParam)s
         and tmsm.SEND_STATUS = 2
         and not exists (
             select
@@ -18,7 +17,6 @@ from
             where
                 tmsm.DATA_COLLECTION_SEQ = tmsmSub.DATA_COLLECTION_SEQ
                 and tmsm.MAIL_SEND_SEQ = tmsmSub.MAIL_SEND_SEQ
-                %(whereSubParam)s
                 and tmsm.SEND_STATUS = tmsmSub.SEND_STATUS
                 and tmsm.DETECTION_DATETIME < tmsmSub.DETECTION_DATETIME
         )
