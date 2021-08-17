@@ -1,0 +1,1 @@
+ALTER TABLE %(p_tableName)s DROP PARTITION %(p_dropPartitionStr)s;

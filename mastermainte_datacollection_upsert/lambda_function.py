@@ -19,6 +19,7 @@ DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 IS_LIMIT = False
+USER_NAME = ""
 
 # カラム名定数
 CLIENT_NAME = "clientName"
@@ -113,6 +114,10 @@ def setIsLimit(bl):
     global IS_LIMIT
     IS_LIMIT = bl
 
+
+def setUserName(userName):
+    global USER_NAME
+    USER_NAME = userName
 
 # --------------------------------------------------
 # 設定ファイル読み込み
@@ -340,7 +345,7 @@ def createCommonParams(event, version):
 
     event[CREATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_AT] = initCommon.getSysDateJst()
-    event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
+    event[UPDATED_USER] = USER_NAME
     event[VERSION] = version
     return event
 
@@ -357,6 +362,10 @@ def lambda_handler(event, context):
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
+    # トークン取得
+    token = event["idToken"]
+    setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
+    
     # body部
     eBody = event["bodyRequest"]
 
