@@ -18,6 +18,7 @@ DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
+USER_NAME = ""
 
 # カラム名定数
 MAIL_SEND_SEQ = "mailSendSeq"
@@ -93,6 +94,10 @@ def setRetryInterval(retryInterval):
     RETRY_INTERVAL = int(retryInterval)
 
 
+def setUserName(userName):
+    global USER_NAME
+    USER_NAME = userName
+
 
 # --------------------------------------------------
 # 設定ファイル読み込み
@@ -134,7 +139,7 @@ def createCommonParams(event):
 
     event[CREATED_AT] = initCommon.getSysDateJst()
     event[UPDATED_AT] = initCommon.getSysDateJst()
-    event[UPDATED_USER] = "devUser" # todo イテレーション3以降で動的化
+    event[UPDATED_USER] = USER_NAME
     return event
 
 #####################
@@ -149,6 +154,10 @@ def lambda_handler(event, context):
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ削除開始 : %s' % event)
 
+    # トークン取得
+    token = event["idToken"]
+    setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
+    
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 

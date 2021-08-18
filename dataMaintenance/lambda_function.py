@@ -1,16 +1,24 @@
-import base64
+# import base64
+# import json
+# import sys
+# import os
+# import pymysql
+# import boto3
+# import LOGGER
+# import datetime
+# import configparser
+# import sqlite3
+# import time
 import json
 import sys
-import os
-import pymysql
-import boto3
-import logging
 import datetime
 import configparser
-import sqlite3
-import time
+import initCommon  # カスタムレイヤー
+import rdsCommon  # カスタムレイヤー
 
 # global
+RDS = None
+LOGGER = None
 CONNECT = None
 LOG_LEVEL = "INFO"
 DB_HOST = "localhost"
@@ -19,9 +27,17 @@ DB_USER = "hoge"
 DB_PASSWORD = "hoge"
 DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
+RETRY_MAX_COUNT = 3
+RETRY_INTERVAL = 500
 PARTITION_FUTURE_RANGE = 5
 
 # setter
+def setRds(rds):
+    global RDS
+    RDS = rds
+def setLogger(logger):
+    global LOGGER
+    LOGGER = logger
 def setLogLevel(loglevel):
     global LOG_LEVEL
     LOG_LEVEL = loglevel
@@ -47,27 +63,27 @@ def setPartitionFutureRange(partitionFutureRange):
     global PARTITION_FUTURE_RANGE
     PARTITION_FUTURE_RANGE = int(partitionFutureRange)
 
-# --------------------------------------------------
-# 初期処理
-# --------------------------------------------------
-def init(filePath):
+def setRetryMaxCount(retryMaxCount):
+    global RETRY_MAX_COUNT
+    RETRY_MAX_COUNT = int(retryMaxCount)
 
-    # 設定ファイル読み込み
-    initConfig(filePath)
 
-    # ロガー設定
-    initLogger()
+def setRetryInterval(retryInterval):
+    global RETRY_INTERVAL
+    RETRY_INTERVAL = int(retryInterval)
 
-    # RDS接続
-    initRds()
 
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
-def initConfig(filePath):
+def initConfig(clientName):
     try:
+        # 設定ファイル読み込み
+        result = initCommon.getS3Object(clientName, "config.ini")
+
+        # ConfigParserへパース
         config_ini = configparser.ConfigParser()
-        config_ini.read(filePath, encoding='utf-8')
+        config_ini.read_string(result)
 
         setLogLevel(config_ini['logger setting']['loglevel'])
         setDbHost(config_ini['rds setting']['host'])
@@ -77,89 +93,23 @@ def initConfig(filePath):
         setDbName(config_ini['rds setting']['db'])
         setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
         setPartitionFutureRange(config_ini['rds setting']['partition_future_range'])
+        setRetryMaxCount(config_ini['rds setting']['retryMaxcount'])
+        setRetryInterval(config_ini['rds setting']['retryinterval'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
 
 # --------------------------------------------------
-# JSTのtime.struct_timeを返却する
-# --------------------------------------------------
-def customTime(*args):
-    utc = datetime.datetime.now(datetime.timezone.utc)
-    jst = datetime.timezone(datetime.timedelta(hours=+9))
-    return utc.astimezone(jst).timetuple()
-
-# --------------------------------------------------
-# JSTの現在日時を返却する
-# --------------------------------------------------
-def getSysDateJst():
-    utc = datetime.datetime.now(datetime.timezone.utc)
-    jst = datetime.timezone(datetime.timedelta(hours=+9))
-    return utc.astimezone(jst)
-
-# --------------------------------------------------
-# ロガー初期設定
-# --------------------------------------------------
-def initLogger():
-    logger = logging.getLogger()
-
-    # 2行出力される対策のため、既存のhandlerを削除
-    for h in logger.handlers:
-      logger.removeHandler(h)
-
-    # handlerの再定義
-    handler = logging.StreamHandler(sys.stdout)
-
-    # 出力フォーマット
-    strFormatter = '[%(levelname)s] %(asctime)s %(funcName)s %(message)s'
-    formatter = logging.Formatter(strFormatter)
-    formatter.converter = customTime
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    # ログレベルの設定
-    logger.setLevel(LOG_LEVEL)
-
-    logging.debug("logsetting completed")
-
-
-# --------------------------------------------------
-# RDS接続
-# --------------------------------------------------
-def initRds():
-    global CONNECT
-    try:
-        logging.debug('RDS connect start')
-        CONNECT = pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USER, passwd=DB_PASSWORD, db=DB_NAME, connect_timeout=DB_CONNECT_TIMEOUT)
-        logging.debug('Success connecting to RDS mysql instance')
-    except Exception  as e:
-        logging.error('Fail connecting to RDS mysql instance')
-        raise(e)
-
-# --------------------------------------------------
-# クエリファイル読み込み
-# --------------------------------------------------
-def get_query(query_file_path):
-    with open(query_file_path, 'r', encoding='utf-8') as f:
-        query = f.read()
-    return query
-
-
-# --------------------------------------------------
 # 保持期間マスタの取得
 # --------------------------------------------------
 def getMasterRetentionReriods():
-    query = get_query("sql/m_retention_periods/findAll.sql")
-
-    logging.debug('SQL:\r\n' + query)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query)
-            result = cur.fetchall()
-        except Exception  as e:
-            logging.error('保持期間マスタ取得時にエラーが発生しました。');
-            cur.close()
-            raise(e)
+    query = initCommon.getQuery("sql/m_retention_periods/findAll.sql")
+    
+    try:
+        result = RDS.fetchall(query)
+    except Exception  as e:
+        LOGGER.error('保持期間マスタ取得時にエラーが発生しました。');
+        raise(e)
     return result
 
 # --------------------------------------------------
@@ -170,17 +120,13 @@ def getMaintenancePartitions(paramTableName, paramPartitionColumnName):
         "p_tableName": paramTableName
         ,"p_partitionColumnName": paramPartitionColumnName
     }
-    query = get_query("sql/t_maintenance_tables/findByPartitionKey.sql")
+    query = initCommon.getQuery("sql/t_maintenance_tables/findByPartitionKey.sql")
 
-    logging.debug('SQL:\r\n' + query % params)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query % params)
-            result = cur.fetchall()
-        except Exception  as e:
-            logging.error('保持期間対象テーブル取得時にエラーが発生しました。(%s / %s)' % (paramTableName, paramPartitionColumnName));
-            cur.close()
-            raise(e)
+    try:
+        result = RDS.fetchall(query, params)
+    except Exception  as e:
+        LOGGER.error('保持期間対象テーブル取得時にエラーが発生しました。(%s / %s)' % (paramTableName, paramPartitionColumnName));
+        raise(e)
     return result
 
 # --------------------------------------------------
@@ -191,17 +137,13 @@ def getInformationSchemaPartitions(paramTableName, paramSchemaName):
         "p_tableName": paramTableName
         ,"p_schemaName" : paramSchemaName
     }
-    query = get_query("sql/information_schema/findByPartitionKey.sql")
+    query = initCommon.getQuery("sql/information_schema/findByPartitionKey.sql")
 
-    logging.debug('SQL:\r\n' + query % params)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query % params)
-            result = cur.fetchall()
-        except Exception  as e:
-            logging.error('パーティション情報取得時にエラーが発生しました。(%s)' % (paramTableName));
-            cur.close()
-            raise(e)
+    try:
+        result = RDS.fetchall(query, params)
+    except Exception  as e:
+        LOGGER.error('パーティション情報取得時にエラーが発生しました。(%s)' % (paramTableName));
+        raise(e)
     return result
 
 # --------------------------------------------------
@@ -225,7 +167,7 @@ def getFuturePartitions(paramFutureRange):
     resultList = []
 
     # システム日付の00:00:00取得
-    nowdateTime = getSysDateJst()
+    nowdateTime = initCommon.getSysDateJst()
     nowdate = datetime.datetime(nowdateTime.year, nowdateTime.month, nowdateTime.day, 0, 0, 0)
 
     # range関数は要素0～
@@ -271,16 +213,13 @@ def createNewPartition(paramTableName, paramPartitionColumnName, paramPartitioSt
         ,"p_partitionColumnName": paramPartitionColumnName
         ,"p_partitionStr": paramPartitioStr
     }
-    query = get_query("sql/t_maintenance_tables/createNewPartition.sql")
+    query = initCommon.getQuery("sql/t_maintenance_tables/createNewPartition.sql")
 
-    logging.debug('SQL:\r\n' + query % params)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query % params)
-        except Exception  as e:
-            logging.error('パーティション作成時にエラーが発生しました。(%s)' % (paramTableName));
-            cur.close()
-            raise(e)
+    try:
+        RDS.execute(query, params, RETRY_MAX_COUNT, RETRY_INTERVAL)
+    except Exception  as e:
+        LOGGER.error('パーティション作成時にエラーが発生しました。(%s)' % (paramTableName));
+        raise(e)
 
 # --------------------------------------------------
 # パーティション情報の追加
@@ -290,16 +229,13 @@ def addPartition(paramTableName, paramPartitionStr):
         "p_tableName": paramTableName
         ,"p_partitionStr": paramPartitionStr
     }
-    query = get_query("sql/t_maintenance_tables/addPartition.sql")
+    query = initCommon.getQuery("sql/t_maintenance_tables/addPartition.sql")
 
-    logging.debug('SQL:\r\n' + query % params)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query % params)
-        except Exception  as e:
-            logging.error('パーティション追加時にエラーが発生しました。(%s)' % (paramTableName));
-            cur.close()
-            raise(e)
+    try:
+        RDS.execute(query, params, RETRY_MAX_COUNT, RETRY_INTERVAL)
+    except Exception  as e:
+        LOGGER.error('パーティション追加時にエラーが発生しました。(%s)' % (paramTableName));
+        raise(e)
 
 # --------------------------------------------------
 # パーティション削除
@@ -309,18 +245,13 @@ def dropPartition(paramTableName, paramDropPartitionStr):
         "p_tableName": paramTableName
         ,"p_dropPartitionStr": paramDropPartitionStr
     }
-    query = get_query("sql/t_maintenance_tables/dropPartition.sql")
+    query = initCommon.getQuery("sql/t_maintenance_tables/dropPartition.sql")
 
-    logging.debug('SQL:\r\n' + query % params)
-    with CONNECT.cursor(pymysql.cursors.DictCursor) as cur:
-        try:
-            cur.execute(query % params)
-            result = cur.fetchall()
-        except Exception  as e:
-            logging.error('パーティション削除時にエラーが発生しました。(%s)' % (paramTableName));
-            cur.close()
-            raise(e)
-    return result
+    try:
+        RDS.execute(query, params, RETRY_MAX_COUNT, RETRY_INTERVAL)
+    except Exception  as e:
+        LOGGER.error('パーティション削除時にエラーが発生しました。(%s)' % (paramTableName));
+        raise(e)
 
 # --------------------------------------------------
 # 2種類の辞書型Listを重複を除いて結合する
@@ -370,7 +301,7 @@ def getDropPartition(paramBaseTable, paramPartitionList, paramRetentionRange):
     nowPartitionList.extend(paramPartitionList)
 
     # システム日付を基準に保持期間分過去にさかのぼったpartitionKeyを取得
-    nowdateTime = getSysDateJst()
+    nowdateTime = initCommon.getSysDateJst()
     nowdate = datetime.datetime(nowdateTime.year, nowdateTime.month, nowdateTime.day, 0, 0, 0)
     oldDate = nowdate + datetime.timedelta(days=paramRetentionRange * -1)
     oldPartitionKey = oldDate.strftime('p%Y%m%d')
@@ -387,12 +318,20 @@ def getDropPartition(paramBaseTable, paramPartitionList, paramRetentionRange):
 def lambda_handler(event, context):
 
     # 初期処理
-    init(event['setting'])
+    initConfig(event["clientName"])
+    setLogger(initCommon.getLogger(LOG_LEVEL))
+    
+    # # 初期処理
+    # init(event['setting'])
 
-    logging.info('データメンテナンス開始 : %s' % event)
+    LOGGER.info('データメンテナンス開始 : %s' % event)
 
+    # RDSコネクション作成
+    rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
+    setRds(rds)
+    
     # 保持期間対象テーブルの取得
-    result = getMasterRetentionReriods()
+    result = rds.fetchall(initCommon.getQuery("sql/m_retention_periods/findAll.sql"))
 
     # 保持期間マスタのレコード分繰り返し
     for record in result:
@@ -400,11 +339,11 @@ def lambda_handler(event, context):
         tableName = record['tableName']
         partitionColumnName = record['partitionColumnName']
         retentionDayUnit = record['retentionDayUnit']
-        logging.info('削除テーブル名:%s カラム名:%s 保持期間(日):%s' % (tableName, partitionColumnName, retentionDayUnit))
+        LOGGER.info('削除テーブル名:%s カラム名:%s 保持期間(日):%s' % (tableName, partitionColumnName, retentionDayUnit))
 
         # 1)保持期間対象テーブルの取得
         maintenanceDataTable = getMaintenancePartitions(tableName, partitionColumnName)
-
+        
         # 2)パーティション情報の取得
         partitionList = convertPartitionList(getInformationSchemaPartitions(tableName, DB_NAME))
 
@@ -419,16 +358,16 @@ def lambda_handler(event, context):
 
         # パーティション作成 / 追加
         if len(partitionList) == 0:
-            logging.info('パーティション新規作成 : %s' % diffTable)
+            LOGGER.info('パーティション新規作成 : %s' % diffTable)
             createNewPartition(tableName, partitionColumnName, createSqlPartiton(diffTable))
         elif len(diffTable) != 0:
-            logging.info('パーティション追加 : %s' % diffTable)
+            LOGGER.info('パーティション追加 : %s' % diffTable)
             addPartition(tableName, createSqlPartiton(diffTable))
         else:
-            logging.info('パーティション作成なし')
+            LOGGER.info('パーティション作成なし')
 
         # パーティション削除
         dropPartitionStr = getDropPartition(diffTable, partitionList, retentionDayUnit)
         if len(dropPartitionStr) != 0:
-            logging.info('パーティション削除 : %s' % dropPartitionStr)
+            LOGGER.info('パーティション削除 : %s' % dropPartitionStr)
             dropPartition(tableName, dropPartitionStr)
