@@ -127,8 +127,11 @@ def initConfig(clientName):
 # --------------------------------------------------
 # 起動パラメータチェック
 # --------------------------------------------------
-def isArgument(eBody, event):
+def isArgument(event):
 
+    # ボディ部
+    eBody = event["bodyRequest"]
+    
     # 必須項目チェック
     noneErrArray = []
     # noneErrArray.append(MAIL_SEND_ID) if (MAIL_SEND_ID not in eBody) else 0
@@ -179,6 +182,19 @@ def isArgument(eBody, event):
     if 0 < len(lengthArray):
         raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
 
+    # トークン取得
+    token = event["idToken"]
+    
+    # ユーザ名／グループ名
+    try:
+        setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(USER_GROUP_LIST) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
     return
 
 # --------------------------------------------------
@@ -224,12 +240,9 @@ def lambda_handler(event, context):
     # トークン取得
     token = event["idToken"]
     setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
-    
-    # ボディ部
-    eBody = event["bodyRequest"]
 
     # 入力チェック
-    isArgument(eBody, event)
+    isArgument(event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
@@ -253,7 +266,7 @@ def lambda_handler(event, context):
     try:
         # メール通知マスタのINSERT
         LOGGER.info("メール通知マスタのINSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
-        rds.execute(initCommon.getQuery("sql/m_mail_send/insert.sql"), createCommonParams(event[MAIL_SEND_ID], eBody, version, mailSendSeq) )
+        rds.execute(initCommon.getQuery("sql/m_mail_send/insert.sql"), createCommonParams(event[MAIL_SEND_ID], event["bodyRequest"], version, mailSendSeq) )
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()

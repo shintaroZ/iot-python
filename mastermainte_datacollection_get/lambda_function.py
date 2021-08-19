@@ -132,15 +132,19 @@ def initConfig(clientName):
 # --------------------------------------------------
 def isArgument(event):
 
-    noneErrArray = []
-    # 存在チェック
-    if "clientName" not in event:
-        noneErrArray.append("clientName")
-
-    if 0 < len(noneErrArray):
-        raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
-
-    return True
+    # トークン取得
+    token = event["idToken"]
+    
+    # グループ名
+    try:
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(USER_GROUP_LIST) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
 
 # --------------------------------------------------
 # 戻り値整形

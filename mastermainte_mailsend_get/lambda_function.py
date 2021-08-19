@@ -114,6 +114,24 @@ def initConfig(clientName):
         raise(e)
 
 # --------------------------------------------------
+# 起動パラメータチェック
+# --------------------------------------------------
+def isArgument(event):
+
+    # トークン取得
+    token = event["idToken"]
+    
+    # グループ名
+    try:
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(USER_GROUP_LIST) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
+# --------------------------------------------------
 # 戻り値整形
 # --------------------------------------------------
 def convertResult(result):
@@ -133,6 +151,9 @@ def lambda_handler(event, context):
     setLogger(initCommon.getLogger(LOG_LEVEL))
 
     LOGGER.info('マスタメンテナンス機能_メール通知マスタ参照開始 : %s' % event)
+
+    # 入力チェック
+    isArgument(event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)

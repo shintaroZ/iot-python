@@ -118,6 +118,7 @@ def setIsLimit(bl):
 def setUserName(userName):
     global USER_NAME
     USER_NAME = userName
+    
 
 # --------------------------------------------------
 # 設定ファイル読み込み
@@ -149,7 +150,10 @@ def initConfig(clientName):
 # --------------------------------------------------
 # 起動パラメータチェック
 # --------------------------------------------------
-def isArgument(eBody):
+def isArgument(event):
+    
+    # body部
+    eBody = event["bodyRequest"]
 
     # 必須項目チェック
     noneErrArray = []
@@ -256,6 +260,21 @@ def isArgument(eBody):
     if 0 < len(lengthArray):
         raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))
 
+    # トークン取得
+    token = event["idToken"]
+    
+    # ユーザ名／グループ名
+    try:
+        setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(USER_GROUP_LIST) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
+        
     return
 
 # --------------------------------------------------
@@ -354,7 +373,6 @@ def createCommonParams(event, version):
 # main
 #####################
 def lambda_handler(event, context):
-    print(event)
 
     # 初期処理
     initConfig(event["clientName"])
@@ -362,15 +380,8 @@ def lambda_handler(event, context):
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
-    # トークン取得
-    token = event["idToken"]
-    setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
-    
-    # body部
-    eBody = event["bodyRequest"]
-
     # 入力チェック
-    isArgument(eBody)
+    isArgument(event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
@@ -391,6 +402,8 @@ def lambda_handler(event, context):
     LOGGER.info("データ定義マスタシーケンスの新規採番 [%d]" % seqDcResult["nextSeq"])
     dataCollectionSeq = seqDcResult["nextSeq"]
 
+    # body部
+    eBody = event["bodyRequest"]
     try:
         # 閾値登録判定
         if IS_LIMIT:

@@ -175,6 +175,28 @@ def createCommonParams(event):
     event[UPDATED_USER] = USER_NAME
     return event
 
+
+# --------------------------------------------------
+# 起動パラメータチェック
+# --------------------------------------------------
+def isArgument(event):
+    
+    # トークン取得
+    token = event["idToken"]
+    
+    # グループ名
+    try:
+        setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(USER_GROUP_LIST) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
+        
+    return
 #####################
 # main
 #####################
@@ -187,10 +209,9 @@ def lambda_handler(event, context):
 
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ削除開始 : %s' % event)
 
-    # トークン取得
-    token = event["idToken"]
-    setUserName(initCommon.getPayLoadKey(token, "cognito:username")[:20] )
-    
+    # 入力チェック
+    isArgument(event)
+
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
