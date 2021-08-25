@@ -1,10 +1,12 @@
-import time
 import boto3
-import os
 import sys
 import configparser
 import datetime
-import logging
+import time
+import json
+import initCommon  # カスタムレイヤー
+import rdsCommon  # カスタムレイヤー
+# from _tracemalloc import start
 
 
 # athena setting
@@ -12,10 +14,12 @@ ATENA_DATABASE = 'hoge'
 ATENA_TABLE = 'hoge'
 S3_OUTPUT = 's3://hoge'
 RETRY_COUNT = 10
+RETRY_INTERVAL = 200
 
 # logger setting
 LOG_LEVEL = "INFO"
-
+LOOGER = None
+CLIENT_NAME = ""
 
 # setter
 # athena setting
@@ -37,59 +41,45 @@ def setStartDateTime(startDateTime):
 def setEndDateTime(endDateTime):
     global END_DATE_TIME
     END_DATE_TIME = endDateTime
+def setRetryInterval(retryInterval):
+    global RETRY_INTERVAL
+    RETRY_INTERVAL = int(retryInterval)
 
 # logger setting
 def setLogLevel(loglevel):
     global LOG_LEVEL
     LOG_LEVEL = loglevel
-
-# --------------------------------------------------
-# ロガー初期設定
-# --------------------------------------------------
-def initLogger():
-    logger = logging.getLogger()
-    
-    # 2行出力される対策のため、既存のhandlerを削除
-    for h in logger.handlers:
-      logger.removeHandler(h)
-    
-    # handlerの再定義
-    handler = logging.StreamHandler(sys.stdout)
-    
-    # 出力フォーマット
-    strFormatter = '[%(levelname)s] %(asctime)s %(funcName)s %(message)s'
-    formatter = logging.Formatter(strFormatter)
-    formatter.converter = customTime
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    
-    # ログレベルの設定
-    logger.setLevel(LOG_LEVEL)
-    
-    logging.debug("logsetting completed")
-
+def setLogger(logger):
+    global LOGGER
+    LOGGER = logger
+def setClientName(clientName):
+    global CLIENT_NAME
+    CLIENT_NAME= clientName
 
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
-def initConfig(filePath):
+def initConfig(clientName):
     try:
+        # 設定ファイル読み込み
+        result = initCommon.getS3Object(clientName, "config.ini")
+
+        # ConfigParserへパース
         config_ini = configparser.ConfigParser()
-        config_ini.read(filePath, encoding='utf-8')
+        config_ini.read_string(result)
         
         # athena setting
         setAtenaDatabase(config_ini['athena setting']['database'])
         setAtenaTable(config_ini['athena setting']['table'])
         setS3Output(config_ini['athena setting']['output'])
         setRetryCount(config_ini['athena setting']['retryCount'])
-        setStartDateTime(config_ini['athena setting']['startDateTime'])
-        setEndDateTime(config_ini['athena setting']['endDateTime'])
+        setRetryInterval(config_ini['athena setting']['retryInterval'])
         
         # logger setting
         setLogLevel(config_ini['logger setting']['loglevel'])
         
     except Exception as e:
-        logging.error('設定ファイルの読み込みに失敗しました。')
+        LOGGER.error('設定ファイルの読み込みに失敗しました。')
         raise(e)
 
 
@@ -97,27 +87,35 @@ def initConfig(filePath):
 # S3からデータの取得
 # --------------------------------------------------
 def get_recovery_data(startDateTime, endDateTime):
+    
+    # 日時文字列から日付部分を抽出
+    startDt = datetime.datetime.strptime(startDateTime, '%Y-%m-%d %H:%M:%S')
+    endDt = datetime.datetime.strptime(endDateTime, '%Y-%m-%d %H:%M:%S')
+    startDateInt = int(startDt.strftime('%Y%m%d'))
+    endDateInt = int(endDt.strftime('%Y%m%d'))
+    
     # created query
     params = {
         "databaseName": ATENA_DATABASE
         ,"tableName": ATENA_TABLE
         ,"startDateTime": startDateTime
         ,"endDateTime": endDateTime
+        ,"startDate" : startDateInt
+        ,"endDate" : endDateInt
     }
-    query = get_query("sql/athena/find.sql")
-
+    queryString = initCommon.getQuery("sql/athena/find.sql") % params
 
     # athena client
     client = boto3.client('athena')
 
     # Execution
     response = client.start_query_execution(
-        QueryString=query % params,
+        QueryString=queryString,
         QueryExecutionContext={
             'Database': ATENA_DATABASE
         },
         ResultConfiguration={
-            'OutputLocation': S3_OUTPUT,
+            'OutputLocation': 's3://%s/%s' % (CLIENT_NAME, S3_OUTPUT),
         }
     )
 
@@ -126,25 +124,25 @@ def get_recovery_data(startDateTime, endDateTime):
 
     # get execution status
     for i in range(1, 1 + RETRY_COUNT):
-
+        
         # get query execution
         query_status = client.get_query_execution(QueryExecutionId=query_execution_id)
         query_execution_status = query_status['QueryExecution']['Status']['State']
 
         if query_execution_status == 'SUCCEEDED':
-            logging.debug("STATUS:" + query_execution_status)
+            LOGGER.debug("STATUS:" + query_execution_status)
             break
 
         if query_execution_status == 'FAILED':
-            logging.debug("STATUS:" + query_execution_status)
+            LOGGER.debug("STATUS:" + query_execution_status)
             raise Exception("STATUS:" + query_execution_status)
 
         else:
-            logging.debug("STATUS:" + query_execution_status)
-            time.sleep(i)
+            LOGGER.debug("STATUS:" + query_execution_status)
+            time.sleep(RETRY_INTERVAL / 1000) # ミリ秒単位
     else:
         client.stop_query_execution(QueryExecutionId=query_execution_id)
-        logging.error('リトライ回数を超過しました。処理を終了します。')
+        LOGGER.error('リトライ回数を超過しました。処理を終了します。')
         sys.exit()
 
     # get query results
@@ -154,12 +152,11 @@ def get_recovery_data(startDateTime, endDateTime):
     list = []
     for row in result["ResultSet"]["Rows"]:
         map = {
-             "setting" : row["Data"][0]["VarCharValue"]
-            ,"deviceId" : row["Data"][1]["VarCharValue"]
-            ,"requestTimeStamp" : row["Data"][2]["VarCharValue"]
-            ,"sensorId" : row["Data"][3]["VarCharValue"]
-            ,"timeStamp" : row["Data"][4]["VarCharValue"]
-            ,"value" : row["Data"][5]["VarCharValue"]
+             "deviceId" : row["Data"][0]["VarCharValue"]
+            ,"requestTimeStamp" : row["Data"][1]["VarCharValue"]
+            ,"sensorId" : row["Data"][2]["VarCharValue"]
+            ,"timeStamp" : row["Data"][3]["VarCharValue"]
+            ,"value" : row["Data"][4]["VarCharValue"]
         }
         list.append(map)
 
@@ -167,90 +164,97 @@ def get_recovery_data(startDateTime, endDateTime):
     list.pop(0)
     
     if len(list) == 0:
-        logging.error('対象のバックアップファイルが存在しませんでした。')
+        LOGGER.error('対象のバックアップファイルが存在しませんでした。')
         sys.exit()
     
     return list
 
 # --------------------------------------------------
-# データの成形
+# 戻り値の作成
 # --------------------------------------------------
 def data_molding(recoveryDataList):
-    resultList = []
-    deviceMap = {}
-    records = []
-    checkSetting = ""
-    checkDeviceId = ""
-    checkRequestTimeStamp = ""
-    sortData = sorted(recoveryDataList, key=lambda x:(x["deviceId"],x["requestTimeStamp"]))
+
+    reEvent = None
+    subTable = {}
+    tempTable = {}
+    recordsArray = []
+    reReceivedMessages = []
+    reEventTable = {}
+    bkDeviceId = None
     
-    for row in sortData:
-        setting = row["setting"]
-        deviceId = row["deviceId"]
-        requestTimeStamp = row["requestTimeStamp"]
+    # デバイスID,受信日時昇順ソート
+    recoveryDataList.sort(key=lambda x:(x["deviceId"],x["requestTimeStamp"]))
 
-        #新しいマップの作成
-        if deviceId != checkDeviceId or requestTimeStamp != checkRequestTimeStamp or setting != checkSetting:
-            deviceMap = {}
-            deviceMap["receveryFlg"] = 1
-            deviceMap["setting"] = setting
-            deviceMap["deviceId"] = deviceId
-            deviceMap["requestTimeStamp"] = requestTimeStamp
-            records = []
-            deviceMap["records"] = records
-            checkSetting = setting
-            checkDeviceId = deviceId
-            checkRequestTimeStamp = requestTimeStamp
+    # 受信メッセージ単位
+    for i in range(len(recoveryDataList)):
+        receivedMessages = recoveryDataList[i]
 
-        #レコードの追加
-        record = {
-            "sensorId" : row["sensorId"]
-            ,"timeStamp" : row["timeStamp"]
-            ,"value" : float(row["value"])
-        }
-        deviceMap["records"].append(record)
+        # デバイスIDが変わった場合、レコードを再形成
+        if ((0 < i and receivedMessages["deviceId"] != bkDeviceId)):
+            reReceivedMessages.append(tempTable)
 
-        #JSONの作成
-        if len(resultList) != 0:
-            if resultList[-1]["deviceId"] == deviceMap["deviceId"] and resultList[-1]["requestTimeStamp"] == deviceMap["requestTimeStamp"] and resultList[-1]["setting"] == deviceMap["setting"]:
-                resultList[-1] = deviceMap
-            else:
-                resultList.append(deviceMap)
+            # 一時テーブル初期化
+            tempTable = {}
+
+        # 各要素を一時保存
+        if "receveryFlg" not in tempTable:
+            tempTable["receveryFlg"] = 1
+        if "deviceId" not in tempTable:
+            tempTable["deviceId"] = receivedMessages["deviceId"]
+        if "requestTimeStamp" not in tempTable:
+            tempTable["requestTimeStamp"] = receivedMessages["requestTimeStamp"]
+            
+        # records要素は追記
+        recordsArray = []
+        recordsArray.append({
+                "sensorId" : receivedMessages["sensorId"]
+                , "timeStamp" : receivedMessages["timeStamp"]
+                , "value" : int(float(receivedMessages["value"]))
+            })
+        if "records" in tempTable:
+            tempTable["records"].extend(recordsArray)
         else:
-            resultList.append(deviceMap)
+            tempTable["records"] = recordsArray
 
-    return resultList
+        # 前回デバイスIDを待避
+        bkDeviceId = receivedMessages["deviceId"]
 
-# --------------------------------------------------
-# クエリファイル読み込み
-# --------------------------------------------------
-def get_query(query_file_path, *args):
-    with open(query_file_path, 'r', encoding='utf-8') as f:
-        query = f.read()
-    return query
+    # 最終ループ用
+    if tempTable:
+        reReceivedMessages.append(tempTable)
 
-# --------------------------------------------------
-# JSTのtime.struct_timeを返却する
-# --------------------------------------------------
-def customTime(*args):
-    utc = datetime.datetime.now(datetime.timezone.utc)
-    jst = datetime.timezone(datetime.timedelta(hours=+9))
-    return utc.astimezone(jst).timetuple()
+    # 親要素の整形
+    reEventTable["clientName"] = CLIENT_NAME
+    reEventTable["receivedMessages"] = reReceivedMessages
+
+    # JSON形式へパース
+    initCommon.setJsonDateTimeFormat("%Y-%m-%d %H:%M:%S.%f")
+    return json.dumps(reEventTable, ensure_ascii=False, default=initCommon.json_serial)
 
 #####################
 # main
 #####################
 def lambda_handler(event, context):
-    # ロガー設定
-    initLogger()
-    # 設定ファイルの読み込み
-    initConfig(event["configPath"])
-
-    #リカバリーデータの取得
-    recoveryDataList = get_recovery_data(event["startDateTime"], event["endDateTime"])
     
-    #リカバリーデータの成形
+    # 初期処理
+    setClientName(event["clientName"])
+    initConfig(event["clientName"])
+    setLogger(initCommon.getLogger(LOG_LEVEL))
+
+    LOGGER.info('リカバリー機能開始 : %s' % event)
+    #
+    # # ロガー設定
+    # initLogger()
+    # # 設定ファイルの読み込み
+    # initConfig(event["configPath"])
+
+    # リカバリーデータの取得
+    recoveryDataList = get_recovery_data(event["startDateTime"], event["endDateTime"])
+    LOGGER.info("リカバリーデータの取得終了.len:[%d]" % len(recoveryDataList))
+    
+    # リカバリーデータの成形
     resultData = data_molding(recoveryDataList)
+    LOGGER.info("戻り値整形終了")
     
 
 
