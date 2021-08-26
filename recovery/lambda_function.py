@@ -6,7 +6,6 @@ import time
 import json
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
-# from _tracemalloc import start
 
 
 # athena setting
@@ -67,41 +66,62 @@ def initConfig(clientName):
         # ConfigParserへパース
         config_ini = configparser.ConfigParser()
         config_ini.read_string(result)
-        
+
         # athena setting
         setAtenaDatabase(config_ini['athena setting']['database'])
         setAtenaTable(config_ini['athena setting']['table'])
         setS3Output(config_ini['athena setting']['output'])
         setRetryCount(config_ini['athena setting']['retryCount'])
         setRetryInterval(config_ini['athena setting']['retryInterval'])
-        
+
         # logger setting
         setLogLevel(config_ini['logger setting']['loglevel'])
-        
+
     except Exception as e:
         LOGGER.error('設定ファイルの読み込みに失敗しました。')
         raise(e)
 
+# --------------------------------------------------
+# 抽出条件の作成
+# --------------------------------------------------
+def createWhereParam(event):
 
-# --------------------------------------------------
-# S3からデータの取得
-# --------------------------------------------------
-def get_recovery_data(startDateTime, endDateTime):
-    
+    # 必須判定付の起動パラメータ取得
+    startDateTime = "1900-01-01 00:00:00" if "startDateTime" not in event else event["startDateTime"]
+    endDateTime = "9999-12-31 23:59:59" if "endDateTime" not in event else event["endDateTime"]
+    deviceId = "" if "deviceId" not in event else event["deviceId"]
+    sensorId = "" if "sensorId" not in event else event["sensorId"]
+
     # 日時文字列から日付部分を抽出
     startDt = datetime.datetime.strptime(startDateTime, '%Y-%m-%d %H:%M:%S')
     endDt = datetime.datetime.strptime(endDateTime, '%Y-%m-%d %H:%M:%S')
     startDateInt = int(startDt.strftime('%Y%m%d'))
     endDateInt = int(endDt.strftime('%Y%m%d'))
-    
+
+    whereParamArray = []
+    whereParamArray.append("temp.createdt between %d and %d" % (startDateInt, endDateInt))
+    whereParamArray.append("temp.requestTimeStamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
+    if deviceId != "":
+        whereParamArray.append("temp.deviceId = '%s'" % deviceId)
+    if sensorId != "":
+        whereParamArray.append("record.sensorId = '%s'" % sensorId)
+
+    # and区切りの文字列返却
+    return " AND ".join(whereParamArray)
+
+# --------------------------------------------------
+# S3からデータの取得
+# --------------------------------------------------
+def get_recovery_data(event):
+
+    # 動的な抽出条件
+    createWhereParam(event)
+
     # created query
     params = {
         "databaseName": ATENA_DATABASE
         ,"tableName": ATENA_TABLE
-        ,"startDateTime": startDateTime
-        ,"endDateTime": endDateTime
-        ,"startDate" : startDateInt
-        ,"endDate" : endDateInt
+        ,"whereParam": createWhereParam(event)
     }
     queryString = initCommon.getQuery("sql/athena/find.sql") % params
 
@@ -123,22 +143,21 @@ def get_recovery_data(startDateTime, endDateTime):
     query_execution_id = response['QueryExecutionId']
 
     # get execution status
+    LOGGER.info("==== get_query_execution start ====")
     for i in range(1, 1 + RETRY_COUNT):
-        
+
         # get query execution
         query_status = client.get_query_execution(QueryExecutionId=query_execution_id)
         query_execution_status = query_status['QueryExecution']['Status']['State']
+        LOGGER.info("get_query_execution status:[%s]" % query_execution_status)
 
         if query_execution_status == 'SUCCEEDED':
-            LOGGER.debug("STATUS:" + query_execution_status)
             break
 
         if query_execution_status == 'FAILED':
-            LOGGER.debug("STATUS:" + query_execution_status)
             raise Exception("STATUS:" + query_execution_status)
 
         else:
-            LOGGER.debug("STATUS:" + query_execution_status)
             time.sleep(RETRY_INTERVAL / 1000) # ミリ秒単位
     else:
         client.stop_query_execution(QueryExecutionId=query_execution_id)
@@ -146,11 +165,22 @@ def get_recovery_data(startDateTime, endDateTime):
         sys.exit()
 
     # get query results
+    LOGGER.info("==== get_query_results start ====")
+
+    resultSetRows = []
     result = client.get_query_results(QueryExecutionId=query_execution_id)
 
+    # get_query_resultsの戻り値は最大1000件までしか取得出来ないので、APIを再起呼び出し
+    try:
+        while(True):
+            resultSetRows.extend(result["ResultSet"]["Rows"])
+            LOGGER.info("get_query_results RowCount:[%d]" % len(resultSetRows))
+            result = client.get_query_results(QueryExecutionId=query_execution_id, NextToken=result["NextToken"])
+    except Exception as ex:
+        pass
     # get data
     list = []
-    for row in result["ResultSet"]["Rows"]:
+    for row in resultSetRows:
         map = {
              "deviceId" : row["Data"][0]["VarCharValue"]
             ,"requestTimeStamp" : row["Data"][1]["VarCharValue"]
@@ -162,11 +192,11 @@ def get_recovery_data(startDateTime, endDateTime):
 
     #ヘッダーの削除
     list.pop(0)
-    
+
     if len(list) == 0:
         LOGGER.error('対象のバックアップファイルが存在しませんでした。')
         sys.exit()
-    
+
     return list
 
 # --------------------------------------------------
@@ -181,7 +211,7 @@ def data_molding(recoveryDataList):
     reReceivedMessages = []
     reEventTable = {}
     bkDeviceId = None
-    
+
     # デバイスID,受信日時昇順ソート
     recoveryDataList.sort(key=lambda x:(x["deviceId"],x["requestTimeStamp"]))
 
@@ -203,7 +233,7 @@ def data_molding(recoveryDataList):
             tempTable["deviceId"] = receivedMessages["deviceId"]
         if "requestTimeStamp" not in tempTable:
             tempTable["requestTimeStamp"] = receivedMessages["requestTimeStamp"]
-            
+
         # records要素は追記
         recordsArray = []
         recordsArray.append({
@@ -235,27 +265,23 @@ def data_molding(recoveryDataList):
 # main
 #####################
 def lambda_handler(event, context):
-    
+
     # 初期処理
     setClientName(event["clientName"])
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
+#     setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('リカバリー機能開始 : %s' % event)
-    #
-    # # ロガー設定
-    # initLogger()
-    # # 設定ファイルの読み込み
-    # initConfig(event["configPath"])
 
     # リカバリーデータの取得
-    recoveryDataList = get_recovery_data(event["startDateTime"], event["endDateTime"])
-    LOGGER.info("リカバリーデータの取得終了.len:[%d]" % len(recoveryDataList))
-    
+    recoveryDataList = get_recovery_data(event)
+    LOGGER.info("リカバリーデータの取得終了")
+
     # リカバリーデータの成形
     resultData = data_molding(recoveryDataList)
     LOGGER.info("戻り値整形終了")
-    
+
 
 
     return resultData
