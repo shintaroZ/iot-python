@@ -108,9 +108,9 @@ def createWhereParam(event):
 
     whereParamArray = []
     whereParamArray.append("temp.createdt between %d and %d" % (startDateInt, endDateInt))
-    whereParamArray.append("temp.requestTimeStamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
+    whereParamArray.append("temp.receivedMessages.requestTimeStamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
     if deviceId != "":
-        whereParamArray.append("temp.deviceId = '%s'" % deviceId)
+        whereParamArray.append("temp.receivedMessages.deviceId = '%s'" % deviceId)
     if sensorId != "":
         whereParamArray.append("record.sensorId = '%s'" % sensorId)
 
