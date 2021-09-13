@@ -23,7 +23,7 @@ values (
     3
     , '2021/07/21 09:00:00'
     , '1'
-    , 1
+    , 0
     , '0'
     , CURRENT_TIMESTAMP
     , null
@@ -33,7 +33,7 @@ values (
     3
     , '2021/07/21 09:10:00'
     , '1'
-    , 1
+    , 0
     , '0'
     , CURRENT_TIMESTAMP
     , null

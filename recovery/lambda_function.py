@@ -14,6 +14,8 @@ ATENA_TABLE = 'hoge'
 S3_OUTPUT = 's3://hoge'
 RETRY_COUNT = 10
 RETRY_INTERVAL = 200
+LATERST_ORDER_ARN = "hoge"
+
 
 # logger setting
 LOG_LEVEL = "INFO"
@@ -55,6 +57,10 @@ def setClientName(clientName):
     global CLIENT_NAME
     CLIENT_NAME= clientName
 
+
+def setLatestOrderArn(latestOrderArn):
+    global LATERST_ORDER_ARN
+    LATERST_ORDER_ARN = latestOrderArn
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -73,9 +79,11 @@ def initConfig(clientName):
         setS3Output(config_ini['athena setting']['output'])
         setRetryCount(config_ini['athena setting']['retryCount'])
         setRetryInterval(config_ini['athena setting']['retryInterval'])
+        setLatestOrderArn(config_ini['athena setting']['latestOrderArn'])
 
         # logger setting
         setLogLevel(config_ini['logger setting']['loglevel'])
+        
 
     except Exception as e:
         LOGGER.error('設定ファイルの読み込みに失敗しました。')
@@ -281,7 +289,10 @@ def lambda_handler(event, context):
     # リカバリーデータの成形
     resultData = data_molding(recoveryDataList)
     LOGGER.info("戻り値整形終了")
-
-
-
-    return resultData
+    
+    # 戻り値経由だとサイズ制限に引っかかるので、本lambda内でinvoke呼び出し
+    lambdaClient = boto3.client("lambda")
+    result = lambdaClient.invoke(
+                FunctionName=LATERST_ORDER_ARN,
+                Payload=resultData
+             )

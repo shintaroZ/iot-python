@@ -18,8 +18,8 @@ into `M_MAIL_SEND`(
     , `UPDATED_USER`
 )
 values (
-    1
-    , '0'
+    0
+    , '1'
     , '0'
     , 1
     , 'shintaro_otoi@icloud.com'
