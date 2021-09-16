@@ -321,11 +321,11 @@ def lambda_handler(event, context):
                 print("\r\n".join(mailTextArray))
                 try:
                     # メール送信 SOURCE_ADDRESS
-#                     send_mail(sesClient
-#                               , SOURCE_ADDRESS
-#                               , msRecord[EMAIL_ADDRESS]
-#                               , msRecord[MAIL_SUBJECT]
-#                               , "\r\n".join(mailTextArray))
+                    send_mail(sesClient
+                              , SOURCE_ADDRESS
+                              , msRecord[EMAIL_ADDRESS]
+                              , msRecord[MAIL_SUBJECT]
+                              , "\r\n".join(mailTextArray))
                     # ステータス更新
                     rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
                             ,createMailSendManagedParams(SendStatusEnum.SendSuccess, sourceRecords[i], msRecord[SEND_FREQUANCY]))
