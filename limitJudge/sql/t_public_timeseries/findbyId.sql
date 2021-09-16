@@ -1,4 +1,4 @@
-/* 時系列より閾値成立管理からセンサの受信タイムスタンプ以前のものを抽出 */
+/* 時系列から最新の閾値成立管理より未来分を取得 */
 select
     tpt.DATA_COLLECTION_SEQ as dataCollectionSeq
     , tpt.RECEIVED_DATETIME as receivedDatetime
@@ -8,6 +8,7 @@ from
     T_PUBLIC_TIMESERIES tpt
 where
     tpt.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
+and '%(detectionDateTime)s' < tpt.RECEIVED_DATETIME
 %(whereParam)s
 
 order by
