@@ -352,7 +352,7 @@ def lambda_handler(event, context):
         # 受信日時をstr→datetime変換
         cnvTimeStamp = datetime.datetime.strptime(argsReceivedDatetime, '%Y/%m/%d %H:%M:%S.%f')
 
-        # データ定義マスタシーケンス毎に最新値を取得
+        # 閾値成立管理から最新の検知日時を取得
         limitHitManagedLatestMap = rds.fetchone(initCommon.getQuery("sql/t_limit_hit_managed/findbyId.sql")
                                                 , createDefaultCommonParams(dataCollectionSeq = argsDataCollectionSeq))
         detectionDateTimeStr = None if limitHitManagedLatestMap is None else limitHitManagedLatestMap[DETECTION_DATETIME]
@@ -377,8 +377,9 @@ def lambda_handler(event, context):
             if 0 < len(publicRecords):
                 LOGGER.debug("閾値判定対象の過去データ:%s" % publicRecords)
                 
-            # 中間コミット
-            rds.commit()
+            # # 中間コミット
+            # LOGGER.info("中間コミット")
+            # rds.commit()
 
         # 前回値を退避
         beforeMap[DATA_COLLECTION_SEQ] = argsDataCollectionSeq
@@ -402,10 +403,16 @@ def lambda_handler(event, context):
                                                     , limitSubNo = limitCheckResult[LIMIT_SUB_NO])
                         , RETRY_MAX_COUNT, RETRY_INTERVAL)
 
+
+
         mailSendArray = []
+        
+        # hoge
+        continue
+    
         # 後続アクション判定
         if limitInfoArray[0][NEXT_ACTION] == NextActionEnum.No:
-            LOGGER.debug("後続アクションなし [%s, %s]" % (limitInfoArray[0][DATA_COLLECTION_SEQ], argsReceivedDatetime))
+            LOGGER.info("後続アクションなし [%s, %s]" % (limitInfoArray[0][DATA_COLLECTION_SEQ], argsReceivedDatetime))
             continue
 
         elif limitInfoArray[0][NEXT_ACTION] == NextActionEnum.MailSend:
@@ -413,16 +420,17 @@ def lambda_handler(event, context):
             # メール通知管理より前回通知時刻取得
             mailSendArray = rds.fetchall(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
                                          ,createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
-                                                                    , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tmsm")
-                                                                    , whereSubParam = createLimitSubNoWhereSubParam(limitCheckResult, "tmsm", "tmsmSub") ))
+                                                                    # , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tmsm")
+                                                                    # , whereSubParam = createLimitSubNoWhereSubParam(limitCheckResult, "tmsm", "tmsmSub") 
+                                                                    ))
             # 現在時刻取得（タイムゾーン解除の為、replace）
             currentDateTime = initCommon.getSysDateJst().replace(tzinfo=None)
-
+        
             # 通知先分loop
             for msRecord in mailSendArray:
 
                 appendDateTime = msRecord[BEFORE_MAIL_SEND_DATETIME] + datetime.timedelta(seconds=limitInfoArray[0][ACTION_RANGE] * 60)
-                LOGGER.debug("メール通知シーケンス:[%d], 現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (msRecord[MAIL_SEND_SEQ]
+                LOGGER.info("メール通知シーケンス:[%d], 現在時刻:[%s], 前回通知:[%s], 通知間隔(分):[%s], 前回通知+通知間隔:[%s]" % (msRecord[MAIL_SEND_SEQ]
                                                                                                  , currentDateTime.strftime("%Y/%m/%d %H:%M:%S.%f")
                                                                                                  , msRecord[BEFORE_MAIL_SEND_DATETIME].strftime("%Y/%m/%d %H:%M:%S.%f")
                                                                                                  , limitInfoArray[0][ACTION_RANGE]
@@ -430,10 +438,18 @@ def lambda_handler(event, context):
 
                 # 通知間隔判定
                 if appendDateTime <= currentDateTime:
+                    # メール通知管理から最新の検知日時を取得
+                    mailSendManagedLatestMap = rds.fetchone(initCommon.getQuery("sql/t_mail_send_managed/findbyId.sql")
+                                                            , createDefaultCommonParams(dataCollectionSeq = argsDataCollectionSeq
+                                                                                        ,limitSubNo=limitInfoArray[0][LIMIT_SUB_NO]
+                                                                                        ,mailSendSeq=msRecord[MAIL_SEND_SEQ]))
+                    mailSendDetectionDateTimeStr = "1900/01/01 00:00:00" if mailSendManagedLatestMap is None else mailSendManagedLatestMap[DETECTION_DATETIME]
+
                     # selectInsert
-                    limitHitArray = rds.execute(initCommon.getQuery("sql/m_mail_send/selectInsert.sql")
+                    limitHitArray = rds.execute(initCommon.getQuery("sql/t_mail_send_managed/selectInsert.sql")
                                                 , createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
-                                                                          , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tlhm")
+                                                                          # , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tlhm")
+                                                                          , detectionDateTime = mailSendDetectionDateTimeStr
                                                                           , timeStamp = argsReceivedDatetime
                                                                           , mailSendSeq = msRecord[MAIL_SEND_SEQ]
                                                                           , sendStatus = int(SendStatusEnum.Before))

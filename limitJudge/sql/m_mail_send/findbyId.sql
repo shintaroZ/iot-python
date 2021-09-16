@@ -32,5 +32,5 @@ where
             and mms.VERSION < mmsSub.VERSION
     )
 order by
-    mms.MAIL_SEND_ID;
+    mms.MAIL_SEND_ID desc;
 
