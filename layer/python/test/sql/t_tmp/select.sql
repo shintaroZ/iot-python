@@ -1,0 +1,2 @@
+select * from TMP_TEMPERATURE
+order by RECEIVED_DATETIME;
