@@ -42,7 +42,7 @@ class LambdaFunctionTest(unittest.TestCase):
         # 保持期間マスタの初期値セット
         RDS.execute(initCommon.getQuery("test/sql/m_retention_periods/upsert001.sql"))
         RDS.commit()
-        
+
         result = lambda_function.getMasterRetentionReriods()
         for r in result:
             print (r)
@@ -57,18 +57,18 @@ class LambdaFunctionTest(unittest.TestCase):
         RDS.execute(initCommon.getQuery("test/sql/t_tmp/insert001.sql")
                     , {"receivedDatetime" : "2020/03/01 00:00:00"})
         RDS.commit
-        
+
         result = lambda_function.getMaintenancePartitions("TMP_TEMPERATURE","RECEIVED_DATETIME")
         self.assertEqual(result[0]["partitionKey"], "p20200229")
         self.assertEqual(result[0]["partitionDate"].strftime('%Y/%m/%d %H:%M:%S'),  "2020/03/01 00:00:00")
-        
+
     # ----------------------------------------------------------------------
     # convertPartitionList()の正常系テスト
     # partitionKeyのListが返却されること。
     # ----------------------------------------------------------------------
     def test_convertPartitionList_001(self):
         print("===== %s start =====" % "test_convertPartitionList_001")
-        
+
         para =[]
         para.append({"partitionKey" : "p20210229"})
         para.append({"partitionKey" : "p20210301"})
@@ -77,14 +77,14 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertTrue("p20210229" in result)
         self.assertTrue("p20210301" in result)
         self.assertFalse("p20210302" in result)
-        
+
     # ----------------------------------------------------------------------
     # getFuturePartitions()の正常系テスト
     # 未来日のパーティションが返却されること。
     # ----------------------------------------------------------------------
     def test_getFuturePartitions_001(self):
         print("===== %s start =====" % "test_getFuturePartitions_001")
-        
+
         # 現在時刻
         nowdateTime = initCommon.getSysDateJst()
         nowdate = datetime.datetime(nowdateTime.year, nowdateTime.month, nowdateTime.day, 0, 0, 0)
@@ -98,7 +98,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[2]["partitionDate"],(nowdate + datetime.timedelta(days=2)))
         self.assertEqual(result[3]["partitionKey"], (nowdate + datetime.timedelta(days=2)).strftime("p%Y%m%d") )
         self.assertEqual(result[3]["partitionDate"],(nowdate + datetime.timedelta(days=3)))
-        
+
     # ----------------------------------------------------------------------
     # createSqlPartiton()の正常系テスト
     # ALTER TABLE パーティション句の構文が返却されること。
@@ -110,11 +110,11 @@ class LambdaFunctionTest(unittest.TestCase):
                     , "partitionDate" : dt.strptime("2021/03/01", "%Y/%m/%d")})
         para.append({ "partitionKey" : "p20210301"
                     , "partitionDate" : dt.strptime("2021/03/02", "%Y/%m/%d")})
-                    
+
         result = lambda_function.createSqlPartiton(para);
         self.assertEqual(result, "PARTITION p20210228 VALUES LESS THAN (TO_DAYS('2021/03/01 00:00:00')),\r\n" \
                                   "PARTITION p20210301 VALUES LESS THAN (TO_DAYS('2021/03/02 00:00:00'))" )
-                                  
+
     # ----------------------------------------------------------------------
     # createNewPartition()の正常系テスト
     # パーティションが新規作成されること。
@@ -127,19 +127,19 @@ class LambdaFunctionTest(unittest.TestCase):
             RDS.commit()
         except Exception  as e:
             print("partition解除済みのため、そのまま継続")
-            
+
         paramTableName = "TMP_TEMPERATURE"
         paramPartitionColumnName = "RECEIVED_DATETIME"
         paramPartitioStr = "PARTITION p20210228 VALUES LESS THAN (TO_DAYS('2021-03/01 00:00:00'))" \
                            ",PARTITION p20210301 VALUES LESS THAN (TO_DAYS('2021-03/02 00:00:00'))" \
                            ",PARTITION p20210302 VALUES LESS THAN (TO_DAYS('2021-03/03 00:00:00'))"
         lambda_function.createNewPartition(paramTableName, paramPartitionColumnName, paramPartitioStr);
-        
+
         # パーティション確認
         pResult = RDS.fetchall(initCommon.getQuery("test/sql/t_tmp/selectPartition.sql"))
         self.assertTrue(pResult[0]["partitionName"] is not None)
-        
-        
+
+
     # ----------------------------------------------------------------------
     # createNewPartition()の異常系テスト
     # パーティション作成失敗時、エラーログが出力されること。
@@ -149,11 +149,11 @@ class LambdaFunctionTest(unittest.TestCase):
         paramTableName = "TMP_TEMPERATURExxx"
         paramPartitionColumnName = "RECEIVED_DATETIME"
         paramPartitioStr = "PARTITION p20210228 VALUES LESS THAN (TO_DAYS('2021-03/01 00:00:00'))"
-        
+
         with self.assertRaises(Exception):
             print("test_createNewPartition_002:Exception is throw")
             lambda_function.createNewPartition(paramTableName, paramPartitionColumnName, paramPartitioStr);
-            
+
     # ----------------------------------------------------------------------
     # addPartition()の正常系テスト
     # パーティションが追加されること。
@@ -162,15 +162,15 @@ class LambdaFunctionTest(unittest.TestCase):
         print("===== %s start =====" % "test_addPartition_001")
         # 予めパーティション作成
         LambdaFunctionTest.test_createNewPartition_001(self)
-        
+
         paramTableName = "TMP_TEMPERATURE"
         paramPartitioStr = "PARTITION p20210303 VALUES LESS THAN (TO_DAYS('2021-03/04 00:00:00'))"
         lambda_function.addPartition(paramTableName, paramPartitioStr);
-        
+
         # パーティション確認
         pResult = RDS.fetchall(initCommon.getQuery("test/sql/t_tmp/selectPartition.sql"))
         self.assertTrue(pResult[0]["partitionName"] is not None)
-        
+
     # ----------------------------------------------------------------------
     # addPartition()の正常系テスト
     # パーティション作成失敗時、エラーログが出力されること。
@@ -183,14 +183,14 @@ class LambdaFunctionTest(unittest.TestCase):
             RDS.commit()
         except Exception  as e:
             print("partition解除済みのため、そのまま継続")
-            
+
         paramTableName = "TMP_TEMPERATURE"
         paramPartitioStr = "PARTITION p20210303 VALUES LESS THAN (TO_DAYS('2021-03/04 00:00:00'))"
-        
+
         with self.assertRaises(Exception):
             print("test_addPartition_002:Exception is throw")
             lambda_function.addPartition(paramTableName, paramPartitioStr);
-            
+
     # ----------------------------------------------------------------------
     # dropPartition()の正常系テスト
     # パーティションが削除されパーティション内のレコードが削除されること。
@@ -209,106 +209,97 @@ class LambdaFunctionTest(unittest.TestCase):
         
         # 予めパーティション作成
         LambdaFunctionTest.test_createNewPartition_001(self)
-        
+
         paramTableName = "TMP_TEMPERATURE"
         paramDropPartitionStr = "p20210228,p20210301"
         lambda_function.dropPartition(paramTableName, paramDropPartitionStr);
-        
+
         # レコード確認
         result = RDS.fetchall(initCommon.getQuery("test/sql/t_tmp/select.sql"))
         self.assertEqual(result[0]["receivedDateTime"].strftime('%Y/%m/%d %H:%M:%S'),  "2021/03/02 00:00:00")
         self.assertEqual(result[1]["receivedDateTime"].strftime('%Y/%m/%d %H:%M:%S'),  "2021/03/02 23:59:59")
-        
+
     # ----------------------------------------------------------------------
     # dropPartition()の異常系テスト
     # パーティション削除失敗時、エラーログが出力されること。
     # ----------------------------------------------------------------------
     def test_dropPartition_002(self):
         print("===== %s start =====" % "test_dropPartition_002")
-        
+
         # パーティション解除
         try:
             RDS.execute(initCommon.getQuery("test/sql/t_tmp/removePartition.sql"))
             RDS.commit()
         except Exception  as e:
             print("partition解除済みのため、そのまま継続")
-            
+
         paramTableName = "TMP_TEMPERATURE"
         paramPartitioStr = "PARTITION p20210303 VALUES LESS THAN (TO_DAYS('2021-03/04 00:00:00'))"
-        
+
         with self.assertRaises(Exception):
             print("test_dropPartition_002:Exception is throw")
             lambda_function.dropPartition(paramTableName, paramDropPartitionStr);
-            
+
     # ----------------------------------------------------------------------
     # getMargeTable()の正常系テスト
     # partitionKeyの重複を除いてテーブル結合した結果が返却されること。
     # ----------------------------------------------------------------------
     def test_getMargeTable_001(self):
         print("===== %s start =====" % "test_getMargeTable_001")
-        
+
         baseTable = []
         baseTable.append({"partitionKey" : "p20210227", "partitionDate" : "2021/02/28 00:00:00"})
         baseTable.append({"partitionKey" : "p20210228", "partitionDate" : "2021/03/01 00:00:00"})
         baseTable.append({"partitionKey" : "p20210301", "partitionDate" : "2021/03/02 00:00:00"})
-        
+
         addTable = []
         addTable.append({"partitionKey" : "p20210301", "partitionDate" : "2021/03/02 00:00:00"})
         addTable.append({"partitionKey" : "p20210302", "partitionDate" : "2021/03/03 00:00:00"})
-        
+
         result = lambda_function.getMargeTable(baseTable, addTable);
         self.assertEqual(result[0]["partitionKey"], "p20210227")
         self.assertEqual(result[1]["partitionKey"], "p20210228")
         self.assertEqual(result[2]["partitionKey"], "p20210301")
         self.assertEqual(result[3]["partitionKey"], "p20210302")
-        
+
     # ----------------------------------------------------------------------
     # getDiffTable()の正常系テスト
     # partitionListの最大値より大きい差分のテーブルが返却されること。
     # ----------------------------------------------------------------------
     def test_getDiffTable_001(self):
         print("===== %s start =====" % "test_getDiffTable_001")
-        
+
         baseTable = []
         baseTable.append({"partitionKey" : "p20210227", "partitionDate" : "2021/02/28 00:00:00"})
         baseTable.append({"partitionKey" : "p20210228", "partitionDate" : "2021/03/01 00:00:00"})
         baseTable.append({"partitionKey" : "p20210301", "partitionDate" : "2021/03/02 00:00:00"})
         baseTable.append({"partitionKey" : "p20210302", "partitionDate" : "2021/03/03 00:00:00"})
-        
+
         partitionList = ["p20210227", "p20210301"]
         result = lambda_function.getDiffTable(baseTable, partitionList);
         self.assertEqual(result[0]["partitionKey"], "p20210302")
-        
-        
+
+
     # ----------------------------------------------------------------------
     # getDropPartition()の正常系テスト
     # partitionListの最大値より大きい差分のテーブルが返却されること。
     # ----------------------------------------------------------------------
     def test_getDropPartition_001(self):
         print("===== %s start =====" % "test_getDropPartition_001")
-        
+
         baseTable = []
         baseTable.append({"partitionKey" : "p20210227", "partitionDate" : "2021/02/28 00:00:00"})
         baseTable.append({"partitionKey" : "p20210228", "partitionDate" : "2021/03/01 00:00:00"})
         baseTable.append({"partitionKey" : "p20210301", "partitionDate" : "2021/03/02 00:00:00"})
         baseTable.append({"partitionKey" : "p20210302", "partitionDate" : "2021/03/03 00:00:00"})
-        
+
         partitionList = ["p20210303"]
-        
+
         retentionRange = 5
-        
+
         # mock使用:システム時刻を3/6とする。
         with mock.patch("initCommon.getSysDateJst") as sysDate_mock:
             sysDate_mock.return_value = dt.strptime("2021/03/06", "%Y/%m/%d")
             result = lambda_function.getDropPartition(baseTable, partitionList, retentionRange);
-            
+
         self.assertEqual(result, "p20210227,p20210228")
-        
-        
-    def test_lambda_handler_001(self):
-        print("===== %s start =====" % "test_getDropPartition_001")
-        
-        event = initCommon.readFileToJson('test/function/input001.json')
-        # 実行
-        lambda_function.lambda_handler(event, None)
-        

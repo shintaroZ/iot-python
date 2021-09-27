@@ -112,5 +112,5 @@ class LambdaFunctionTest(unittest.TestCase):
         print("---test_lambda_handler_004---")
         event = initCommon.readFileToJson('test/function/input004.json')
 
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(Exception):
             lambda_function.lambda_handler(event, None)

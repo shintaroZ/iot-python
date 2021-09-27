@@ -325,24 +325,3 @@ class LambdaFunctionTest(unittest.TestCase):
         print ("============ result ============")
         print (result)
 
-
-    # ----------------------------------------------------------------------
-    # lambda_handler()の異常系テスト
-    # 数値、bool型以外の値が来た場合、監視テーブルへ登録されること。
-    # ----------------------------------------------------------------------
-    def test_lambda_handler_006(self):
-        print("---test_lambda_handler_006---")
-
-        # 公開DBクリア
-        RDS.execute(initCommon.getQuery("test/sql/t_public_timeseries/delete.sql")
-                    , { "tableName": "T_PUBLIC_TIMESERIES"
-                    , "receivedDatetimeBefore": "2021/05/01 00:00:00"
-                    , "receivedDatetimeAfter": "2021/05/01 23:59:59" })
-        RDS.commit()
-
-        # 実行
-        startDt = initCommon.getSysDateJst()
-        event = initCommon.readFileToJson('test/function/input006.json')
-        result = lambda_function.lambda_handler(event, None)
-        endDt = initCommon.getSysDateJst()
-

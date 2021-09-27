@@ -1,25 +1,22 @@
 select
     mms.MAIL_SEND_SEQ as mailSendSeq
     , mms.MAIL_SEND_ID as mailSendId
-    , ifnull(tmsm.DETECTION_DATETIME, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')) as beforeDetectionDateTime
-    , ifnull(tmsm.UPDATED_AT, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')) as beforeMailSendDateTime
+    , ifnull(tmsm.updatedAt, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')) as beforeMailSendDateTime
 from
     M_MAIL_SEND mms
-    left outer join T_MAIL_SEND_MANAGED tmsm
-        on mms.MAIL_SEND_SEQ = tmsm.MAIL_SEND_SEQ
-        and tmsm.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
-        and tmsm.SEND_STATUS = 2
-        and not exists (
-            select
-                1
-            from
-                T_MAIL_SEND_MANAGED tmsmSub
-            where
-                tmsm.DATA_COLLECTION_SEQ = tmsmSub.DATA_COLLECTION_SEQ
-                and tmsm.MAIL_SEND_SEQ = tmsmSub.MAIL_SEND_SEQ
-                and tmsm.SEND_STATUS = tmsmSub.SEND_STATUS
-                and tmsm.DETECTION_DATETIME < tmsmSub.DETECTION_DATETIME
-        )
+    left outer join (
+        select
+            max(tmsmSub.UPDATED_AT) as updatedAt
+            , tmsmSub.MAIL_SEND_SEQ as mailSendSeq
+        from
+            T_MAIL_SEND_MANAGED tmsmSub
+        where
+            tmsmSub.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
+        and tmsmSub.SEND_STATUS = 2
+        group by
+            tmsmSub.MAIL_SEND_SEQ
+    ) tmsm
+    on tmsm.mailSendSeq = mms.MAIL_SEND_SEQ
 where
     mms.DELETE_FLG = 0
     and not exists (

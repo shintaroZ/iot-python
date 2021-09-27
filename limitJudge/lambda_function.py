@@ -353,7 +353,7 @@ def lambda_handler(event, context):
         # 閾値成立管理から最新の検知日時を取得
         limitHitManagedLatestMap = rds.fetchone(initCommon.getQuery("sql/t_limit_hit_managed/findbyId.sql")
                                                 , createDefaultCommonParams(dataCollectionSeq = argsDataCollectionSeq))
-        detectionDateTimeStr = "1900/01/01 00:00:00" if limitHitManagedLatestMap is None else limitHitManagedLatestMap[DETECTION_DATETIME]
+        detectionDateTimeStr = "1900/01/01 00:00:00" if limitHitManagedLatestMap[DETECTION_DATETIME] is None else limitHitManagedLatestMap[DETECTION_DATETIME]
 
         # 初回 or データ定義マスタシーケンスが切り替わったタイミング
         if i == 0 or (0 < i and DATA_COLLECTION_SEQ in beforeMap and argsDataCollectionSeq != beforeMap[DATA_COLLECTION_SEQ]):
@@ -370,18 +370,12 @@ def lambda_handler(event, context):
             
             # 時系列より閾値判定対象の過去データ取得
             # 性能用にSQL分割
-            # LOGGER.info("public select start") ##################################
             publicRecords = rds.fetchall(initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
                                          , createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
                                                                      , detectionDateTime = detectionDateTimeStr
                                                                      , whereParam = createPublicTimeseriesWhereParam(limitInfoArray[0][LIMIT_COUNT_RESET_RANGE], cnvTimeStamp)))
             if 0 < len(publicRecords):
                 LOGGER.debug("閾値判定対象の過去データ:%s" % publicRecords)
-            # LOGGER.info("public select end  ") ##################################
-                
-            # # 中間コミット
-            # LOGGER.info("中間コミット")
-            # rds.commit()
 
         # 前回値を退避
         beforeMap[DATA_COLLECTION_SEQ] = argsDataCollectionSeq
@@ -402,9 +396,6 @@ def lambda_handler(event, context):
                                                     , limitSubNo = limitCheckResult[LIMIT_SUB_NO])
                         , RETRY_MAX_COUNT, RETRY_INTERVAL)
 
-
-    # 中間コミット
-    rds.commit()
     
     # データ定義マスタシーケンス分loop
     for liArray in limitInfoTable:
@@ -439,16 +430,13 @@ def lambda_handler(event, context):
                     # メール通知管理から最新の検知日時を取得
                     mailSendManagedLatestMap = rds.fetchone(initCommon.getQuery("sql/t_mail_send_managed/findbyId.sql")
                                                             , createDefaultCommonParams(dataCollectionSeq = liArray[0][DATA_COLLECTION_SEQ]
-                                                                                        # ,limitSubNo=msRecord[LIMIT_SUB_NO]
                                                                                         ,mailSendSeq=msRecord[MAIL_SEND_SEQ]))
-                    mailSendDetectionDateTimeStr = "1900/01/01 00:00:00" if mailSendManagedLatestMap is None else mailSendManagedLatestMap[DETECTION_DATETIME]
+                    mailSendDetectionDateTimeStr = "1900/01/01 00:00:00" if mailSendManagedLatestMap[DETECTION_DATETIME] is None else mailSendManagedLatestMap[DETECTION_DATETIME]
 
                     # selectInsert
                     limitHitArray = rds.execute(initCommon.getQuery("sql/t_mail_send_managed/selectInsert.sql")
                                                 , createDefaultCommonParams(dataCollectionSeq = liArray[0][DATA_COLLECTION_SEQ]
-                                                                          # , whereParam = createLimitSubNoWhereParam(limitCheckResult, "tlhm")
                                                                           , detectionDateTime = mailSendDetectionDateTimeStr
-                                                                          # , timeStamp = argsReceivedDatetime
                                                                           , mailSendSeq = msRecord[MAIL_SEND_SEQ]
                                                                           , sendStatus = int(SendStatusEnum.Before))
                                                 , RETRY_MAX_COUNT
@@ -456,7 +444,6 @@ def lambda_handler(event, context):
                 else:
                     # 通知間隔内はskip
                     LOGGER.info("通知間隔範囲内の為、メール通知管理の登録をスキップします。[%d, %d]" % (liArray[0][DATA_COLLECTION_SEQ]
-                                                                               # , argsReceivedDatetime
                                                                                , msRecord[MAIL_SEND_SEQ]))
                     
 

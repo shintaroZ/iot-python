@@ -173,11 +173,14 @@ def isArgument(event):
     lengthArray.append(MAIL_SUBJECT) if (30 < len(eBody[MAIL_SUBJECT])) else 0
     lengthArray.append(SEND_WEEK_TYPE) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_WEEK_TYPE]) else 0
     lengthArray.append(SEND_FREQUANCY) if (MAX_TYNYINT_UNSIGNED < eBody[SEND_FREQUANCY]) else 0
-    # マルチバイト文字は2バイト計算
-    lengthArray.append(MAIL_TEXT_HEADER) if (MAIL_TEXT_HEADER in eBody and 65535 < len(eBody[MAIL_TEXT_HEADER].encode("shift-jis"))) else 0
-    lengthArray.append(MAIL_TEXT_BODY) if (65535 < len(eBody[MAIL_TEXT_BODY].encode("shift-jis"))) else 0
-    lengthArray.append(MAIL_TEXT_FOOTER) if (MAIL_TEXT_FOOTER in eBody and 65535 < len(eBody[MAIL_TEXT_FOOTER].encode("shift-jis"))) else 0
-
+    # マルチバイト文字はutf-8変換
+    try:
+        lengthArray.append(MAIL_TEXT_HEADER) if (MAIL_TEXT_HEADER in eBody and 65535 < len(eBody[MAIL_TEXT_HEADER].encode("utf-8"))) else 0
+        lengthArray.append(MAIL_TEXT_BODY) if (65535 < len(eBody[MAIL_TEXT_BODY].encode("utf-8"))) else 0
+        lengthArray.append(MAIL_TEXT_FOOTER) if (MAIL_TEXT_FOOTER in eBody and 65535 < len(eBody[MAIL_TEXT_FOOTER].encode("utf-8"))) else 0
+    except Exception as ex:
+        raise Exception ("EncodeError.[%s]" % ex)
+        
     # データ長異常の場合は例外スロー
     if 0 < len(lengthArray):
         raise TypeError("The parameters is length invalid. [%s]" % ",".join(lengthArray))

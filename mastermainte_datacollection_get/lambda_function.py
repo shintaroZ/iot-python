@@ -141,7 +141,7 @@ def isArgument(event):
     
         # 顧客名がグループ名に含まれること
         if (event["clientName"] not in groupList):
-            raise Exception("顧客名がグループ名と異なります。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
     except Exception as ex:
         raise Exception("Authentication Error. [%s]" %  ex)
         

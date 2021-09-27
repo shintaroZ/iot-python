@@ -16,6 +16,8 @@ RETRY_COUNT = 10
 RETRY_INTERVAL = 200
 LATERST_ORDER_ARN = "hoge"
 
+# invoke時の引数最大サイズ(byte)、正確には6291456(byte)だが、余裕を持たせる
+INVOKE_MAX_BODY_SIZE = 6200000
 
 # logger setting
 LOG_LEVEL = "INFO"
@@ -107,12 +109,12 @@ def createWhereParam(event):
     endDateInt = int(endDt.strftime('%Y%m%d'))
 
     whereParamArray = []
-    whereParamArray.append("temp.createdt between %d and %d" % (startDateInt, endDateInt))
-    whereParamArray.append("temp.receivedMessages.requestTimeStamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
+    whereParamArray.append("createdt between %d and %d" % (startDateInt, endDateInt))
+    whereParamArray.append("rMessages.requesttimestamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
     if deviceId != "":
-        whereParamArray.append("temp.receivedMessages.deviceId = '%s'" % deviceId)
+        whereParamArray.append("rMessages.deviceid = '%s'" % deviceId)
     if sensorId != "":
-        whereParamArray.append("record.sensorId = '%s'" % sensorId)
+        whereParamArray.append("records.sensorid = '%s'" % sensorId)
 
     # and区切りの文字列返却
     return " AND ".join(whereParamArray)
@@ -132,7 +134,7 @@ def get_recovery_data(event):
         ,"whereParam": createWhereParam(event)
     }
     queryString = initCommon.getQuery("sql/athena/find.sql") % params
-
+    LOGGER.debug(queryString)
     # athena client
     client = boto3.client('athena')
 
@@ -202,15 +204,14 @@ def get_recovery_data(event):
     list.pop(0)
 
     if len(list) == 0:
-        LOGGER.error('対象のバックアップファイルが存在しませんでした。')
-        sys.exit()
-
+        raise Exception ("対象のバックアップファイルが存在しませんでした。")
+ 
     return list
 
 # --------------------------------------------------
 # 戻り値の作成
 # --------------------------------------------------
-def data_molding(recoveryDataList):
+def getReceivedMessages(recoveryDataList):
 
     reEvent = None
     subTable = {}
@@ -219,6 +220,7 @@ def data_molding(recoveryDataList):
     reReceivedMessages = []
     reEventTable = {}
     bkDeviceId = None
+    recordsSize = 0
 
     # デバイスID,受信日時昇順ソート
     recoveryDataList.sort(key=lambda x:(x["deviceId"],x["requestTimeStamp"]))
@@ -227,16 +229,15 @@ def data_molding(recoveryDataList):
     for i in range(len(recoveryDataList)):
         receivedMessages = recoveryDataList[i]
 
-        # デバイスIDが変わった場合、レコードを再形成
-        if ((0 < i and receivedMessages["deviceId"] != bkDeviceId)):
+        # デバイスIDが変わった or recordsサイズが上限を超えた場合、レコードを再形成
+        if ((0 < i and receivedMessages["deviceId"] != bkDeviceId) or INVOKE_MAX_BODY_SIZE < recordsSize):
             reReceivedMessages.append(tempTable)
 
             # 一時テーブル初期化
             tempTable = {}
-
+            recordsSize = 0
+        
         # 各要素を一時保存
-        if "receveryFlg" not in tempTable:
-            tempTable["receveryFlg"] = 1
         if "deviceId" not in tempTable:
             tempTable["deviceId"] = receivedMessages["deviceId"]
         if "requestTimeStamp" not in tempTable:
@@ -247,12 +248,15 @@ def data_molding(recoveryDataList):
         recordsArray.append({
                 "sensorId" : receivedMessages["sensorId"]
                 , "timeStamp" : receivedMessages["timeStamp"]
-                , "value" : int(float(receivedMessages["value"]))
+                , "value" : receivedMessages["value"]
             })
         if "records" in tempTable:
             tempTable["records"].extend(recordsArray)
         else:
             tempTable["records"] = recordsArray
+        
+        # Size計算
+        recordsSize += len(str(recordsArray))
 
         # 前回デバイスIDを待避
         bkDeviceId = receivedMessages["deviceId"]
@@ -261,14 +265,36 @@ def data_molding(recoveryDataList):
     if tempTable:
         reReceivedMessages.append(tempTable)
 
-    # 親要素の整形
-    reEventTable["clientName"] = CLIENT_NAME
-    reEventTable["receivedMessages"] = reReceivedMessages
+    return reReceivedMessages
 
-    # JSON形式へパース
-    initCommon.setJsonDateTimeFormat("%Y-%m-%d %H:%M:%S.%f")
-    return json.dumps(reEventTable, ensure_ascii=False, default=initCommon.json_serial)
-
+# --------------------------------------------------
+# 公開DB作成機能の呼び出し
+# --------------------------------------------------
+def latestOrderInvokeConvert(recoveryDataList):
+    
+    # receivedMessagesの整形
+    reReceivedMessages = getReceivedMessages(recoveryDataList)
+    
+    for rMessage in reReceivedMessages:
+        
+        # 親要素の整形
+        reEventTable = {}
+        reEventTable["clientName"] = CLIENT_NAME
+        reEventTable["receveryFlg"] = 1
+        reEventTable["receivedMessages"] = [rMessage]
+        
+        # JSON形式へパース
+        initCommon.setJsonDateTimeFormat("%Y-%m-%d %H:%M:%S.%f")
+        strJsonResult = json.dumps(reEventTable, ensure_ascii=False, default=initCommon.json_serial)
+    
+        # 公開DB作成機能の呼び出し
+        LOGGER.info("公開db作成機能-開始 [deviceId:%s]" % rMessage["deviceId"])
+        lambdaClient = boto3.client("lambda")
+        lambdaClient.invoke(
+                FunctionName=LATERST_ORDER_ARN,
+                Payload=strJsonResult
+             )
+        LOGGER.info("公開db作成機能-終了 [deviceId:%s]" % rMessage["deviceId"])
 #####################
 # main
 #####################
@@ -284,15 +310,7 @@ def lambda_handler(event, context):
 
     # リカバリーデータの取得
     recoveryDataList = get_recovery_data(event)
-    LOGGER.info("リカバリーデータの取得終了")
+    LOGGER.info("リカバリーデータの取得終了(%d件)" % len(recoveryDataList))
 
-    # リカバリーデータの成形
-    resultData = data_molding(recoveryDataList)
-    LOGGER.info("戻り値整形終了")
-    
     # 戻り値経由だとサイズ制限に引っかかるので、本lambda内でinvoke呼び出し
-    lambdaClient = boto3.client("lambda")
-    result = lambdaClient.invoke(
-                FunctionName=LATERST_ORDER_ARN,
-                Payload=resultData
-             )
+    latestOrderInvokeConvert(recoveryDataList)

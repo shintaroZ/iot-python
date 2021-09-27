@@ -1,13 +1,15 @@
-SELECT
-    temp.receivedMessages.deviceId,
-    temp.receivedMessages.requestTimeStamp,
-    record.sensorid,
-    record.timestamp,
-    record.VALUE
+SELECT 
+	rMessages.deviceid
+	, rMessages.requesttimestamp
+	, records.sensorid
+	, records.timestamp
+	, records.value
 FROM
-    %(databaseName)s.%(tableName)s as temp
+    %(databaseName)s.%(tableName)s
 CROSS JOIN UNNEST
-	(temp.receivedMessages.records) as t(record)
+	(receivedMessages) as t(rMessages)
+CROSS JOIN UNNEST
+	(rMessages.records) as t(records)	
 WHERE
 	%(whereParam)s
 ;

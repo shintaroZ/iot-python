@@ -13,4 +13,4 @@ and '%(detectionDateTime)s' < tpt.RECEIVED_DATETIME
 
 order by
     tpt.RECEIVED_DATETIME desc
-
+;

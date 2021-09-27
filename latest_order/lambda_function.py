@@ -237,60 +237,6 @@ def validateBoolean(value):
     return result
 
 
-# --------------------------------------------------
-# 起動パラメータの再形成
-# --------------------------------------------------
-def getEventListReConv(event):
-
-    reEvent = None
-    recordList = []
-    subTable = {}
-    tempTable = {}
-    reReceivedMessages = []
-    reEventTable = {}
-    bkDeviceId = None
-
-    # デバイスID昇順ソート
-    event["receivedMessages"].sort(key=lambda x:x['deviceId'])
-
-    # 受信メッセージ単位
-    for i in range(len(event["receivedMessages"])):
-        receivedMessages = event["receivedMessages"][i]
-
-        # デバイスIDが変わった場合、レコードを再形成
-        if ((0 < i and receivedMessages["deviceId"] != bkDeviceId)):
-            reReceivedMessages.append(tempTable)
-
-            # 一時テーブル初期化
-            tempTable = {}
-
-        # 各要素を一時保存
-        if "deviceId" not in tempTable:
-            tempTable["deviceId"] = receivedMessages["deviceId"]
-        if "requestTimeStamp" not in tempTable:
-            tempTable["requestTimeStamp"] = receivedMessages["requestTimeStamp"]
-        # records要素は追記
-        if "records" in tempTable:
-            tempTable["records"] = tempTable["records"] + receivedMessages["records"]
-        else:
-            tempTable["records"] = receivedMessages["records"]
-
-        # 前回デバイスIDを待避
-        bkDeviceId = receivedMessages["deviceId"]
-
-    # 最終ループ用
-    if tempTable:
-        reReceivedMessages.append(tempTable)
-
-    # 親要素の整形
-    reEventTable["clientName"] = event["clientName"]
-    if "receveryFlg" in event:
-        reEventTable["receveryFlg"] = event["receveryFlg"]
-    reEventTable["receivedMessages"] = reReceivedMessages
-
-    return reEventTable
-
-
 #####################
 # main
 #####################
@@ -299,17 +245,15 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
+    # setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('公開DB作成開始 : %s' % event)
 
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
-    # eventパラメータの再形成
-    # eventList = getEventListReConv(event)
-
     # リカバリ判定
-    isRecevery = False if "receveryFlg" not in event else True
+    isRecevery = True if ("receveryFlg" in event and event["receveryFlg"] == 1) else False
 
     reReceivedMessages = []
     reRecords = []
@@ -336,24 +280,29 @@ def lambda_handler(event, context):
             timeStamp = record['timeStamp']
             value = record['value']
 
-            # 中間コミット（リカバリ時）
+            # 初回 or センサが切り替わったタイミングでマスタ取得
+            if sensorId != beforeSensorId:
+                # データ定義マスタの取得
+                res = getMasterDataCollection(rds, deviceId, sensorId)
+                dataCollectionSeq = int(res['dataCollectionSeq'])
+                collectionValueType = res['collectionValueType']
+                revisionMagification = 1 if (res['revisionMagification'] is None) else float(res['revisionMagification'])
+                savingFlg = int(res['savingFlg'])
+                limitCheckFlg = int(res['limitCheckFlg'])
+                        
+            # リカバリ時のみセンサが切り替わったタイミングで中間コミット
             if isRecevery and beforeSensorId != "" and sensorId != beforeSensorId:
-                LOGGER.debug("%sの処理完了のため、中間コミットします。" % beforeSensorId)
+                LOGGER.info("%sの処理完了のため、中間コミットします。" % beforeSensorId)
                 bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
                 bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
-                rds.commit
+                rds.commit()
 
                 # 一時配列クリア
                 publicTableValues = []
                 surveillanceValues = []
 
-            # データ定義マスタの取得
-            res = getMasterDataCollection(rds, deviceId, sensorId)
-            dataCollectionSeq = int(res['dataCollectionSeq'])
-            collectionValueType = res['collectionValueType']
-            revisionMagification = 1 if (res['revisionMagification'] is None) else float(res['revisionMagification'])
-            savingFlg = int(res['savingFlg'])
-            limitCheckFlg = int(res['limitCheckFlg'])
+            # 前回値退避
+            beforeSensorId = sensorId
 
             # 単位合わせ用に加工
             cnvTimeStamp = None
@@ -373,20 +322,25 @@ def lambda_handler(event, context):
                 else:
                     cnvValue = 0
 
-            # 公開DBの取得
-            resPub = getPublicTable(rds, dataCollectionSeq, cnvTimeStamp)
-
             # 閾値判定ありの要素のみ戻り値に含める
             if limitCheckFlg == LimitCheckEnum.Valid:
                 reMap = {}
                 reMap["dataCollectionSeq"] = str(dataCollectionSeq)
                 reMap["receivedDatetime"] = cnvTimeStamp.strftime('%Y/%m/%d %H:%M:%S.%f')
                 reRecords.append(reMap)
-
+            
             # 蓄積有無判定
             if savingFlg != SavingEnum.Valid:
                 LOGGER.info("蓄積対象外の為、スキップします。(%s / %s)" % (deviceId, sensorId))
                 continue
+            
+            if isRecevery == True:
+                # LOGGER.info("リカバリ処理の為、公開DB取得をスキップして即時更新します。(%s / %s)" % (deviceId, sensorId))
+                publicTableValues.append(createPublicTableValues(dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
+                continue
+            
+            # 公開DBの取得
+            resPub = getPublicTable(rds, dataCollectionSeq, cnvTimeStamp)
 
             # センサ登録判定
             errMsg = ""
@@ -401,15 +355,10 @@ def lambda_handler(event, context):
                 LOGGER.debug('★登録対象 (%d / %s / %f / %s)' % (dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
                 publicTableValues.append(createPublicTableValues(dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
             else:
-                if ("receveryFlg" in e and int(e["receveryFlg"]) == 1):
-                    LOGGER.debug("リカバリーの為、監視テーブルの更新をスキップします。(%s / %s / %s)" % (deviceId, requestTimeStamp, sensorId))
-                else:
-                    LOGGER.warn(errMsg)
-                    surveillanceValues.append(createSurveillanceValues(nowDateTime, "公開DB作成機能", errMsg, nowDateTime))
+                LOGGER.warn(errMsg)
+                surveillanceValues.append(createSurveillanceValues(nowDateTime, "公開DB作成機能", errMsg, nowDateTime))
 
-            # 前回センサID
-            beforeSensorId = sensorId
-
+        
         # commit
         bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
         bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
