@@ -2,5 +2,6 @@
 	"clientName": "eg-iot-develop",
 	"startDateTime": "2021-05-01 00:00:00",
 	"endDateTime": "2021-05-01 23:59:59",
-	"deviceId": "700400015-66DEF1DE"
+	"deviceId": "700400015-66DEF1DE",
+	"sensorId": "xxxxx"
 }

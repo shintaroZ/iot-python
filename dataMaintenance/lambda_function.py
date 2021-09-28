@@ -1,14 +1,3 @@
-# import base64
-# import json
-# import sys
-# import os
-# import pymysql
-# import boto3
-# import LOGGER
-# import datetime
-# import configparser
-# import sqlite3
-# import time
 import json
 import sys
 import datetime

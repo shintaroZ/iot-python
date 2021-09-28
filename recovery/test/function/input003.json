@@ -1,6 +1,3 @@
 {
-	"clientName": "eg-iot-develop",
-    "startDateTime": "2021-09-24 00:00:00",
-    "endDateTime": "2021-09-24 23:59:59",
-	"deviceId": "700400015-66DEF1DE"
+	"clientName": "eg-iot-develop"
 }

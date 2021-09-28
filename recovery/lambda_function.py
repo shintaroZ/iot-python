@@ -88,7 +88,7 @@ def initConfig(clientName):
         
 
     except Exception as e:
-        LOGGER.error('設定ファイルの読み込みに失敗しました。')
+        print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
 
 # --------------------------------------------------
@@ -295,6 +295,7 @@ def latestOrderInvokeConvert(recoveryDataList):
                 Payload=strJsonResult
              )
         LOGGER.info("公開db作成機能-終了 [deviceId:%s]" % rMessage["deviceId"])
+        
 #####################
 # main
 #####################
@@ -304,7 +305,6 @@ def lambda_handler(event, context):
     setClientName(event["clientName"])
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
-#     setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('リカバリー機能開始 : %s' % event)
 
