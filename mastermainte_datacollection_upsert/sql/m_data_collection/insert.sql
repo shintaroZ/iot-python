@@ -1,6 +1,7 @@
 insert
 into `M_DATA_COLLECTION`(
     `DATA_COLLECTION_SEQ`
+    , `EQUIPMENT_ID`
     , `DEVICE_ID`
     , `SENSOR_ID`
     , `DELETE_FLG`
@@ -12,13 +13,12 @@ into `M_DATA_COLLECTION`(
     , `COLLECTION_VALUE_TYPE`
     , `COLLECTION_TYPE`
     %(insert_revisionMagnification)s
-    %(insert_xCoordinate)s
-    %(insert_yCoordinate)s
     , `CREATED_AT`
     , `UPDATED_USER`
 )
 values (
     %(dataCollectionSeq)d
+    , '%(equipmentId)s'
     , '%(deviceId)s'
     , '%(sensorId)s'
     , 0
@@ -30,8 +30,6 @@ values (
     , %(collectionValueType)d
     , %(collectionType)d
     %(values_revisionMagnification)s
-    %(values_xCoordinate)s
-    %(values_yCoordinate)s
     , '%(createdAt)s'
     , '%(updatedUser)s'
 );

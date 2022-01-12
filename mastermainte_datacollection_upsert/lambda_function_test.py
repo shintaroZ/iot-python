@@ -60,6 +60,7 @@ class LambdaFunctionTest(unittest.TestCase):
 
         self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
 
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1001")
         self.assertEqual(result[0]["sensorName"], "温度 〈センサ1〉")
@@ -69,8 +70,6 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[0]["collectionValueType"], 0)
         self.assertEqual(result[0]["collectionType"], 1)
         self.assertEqual(result[0]["revisionMagnification"], 0.01)
-        self.assertEqual(result[0]["xCoordinate"], 1234.56)
-        self.assertEqual(result[0]["yCoordinate"], 2345.67)
         self.assertEqual(result[0]["savingFlg"], 0)
         self.assertEqual(result[0]["limitCheckFlg"], 1)
         self.assertEqual(result[0]["limitCountType"], 1)
@@ -114,6 +113,7 @@ class LambdaFunctionTest(unittest.TestCase):
         lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
 
 
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1003")
         self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
@@ -124,8 +124,8 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result[0]["collectionValueType"], 0)
         self.assertEqual(result[0]["collectionType"], 1)
         self.assertEqual(result[0]["revisionMagnification"], 0.01)
-        self.assertEqual(result[0]["xCoordinate"], None)
-        self.assertEqual(result[0]["yCoordinate"], None)
+        # self.assertEqual(result[0]["xCoordinate"], None)
+        # self.assertEqual(result[0]["yCoordinate"], None)
         self.assertEqual(result[0]["savingFlg"], 0)
         self.assertEqual(result[0]["limitCheckFlg"], 1)
         self.assertEqual(result[0]["limitCountType"], 1)
@@ -167,6 +167,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
 
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1004")
         self.assertEqual(result[0]["sensorName"], "温度 〈センサ4〉")
@@ -189,6 +190,8 @@ class LambdaFunctionTest(unittest.TestCase):
 
         result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+        
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1001")
         self.assertEqual(result[0]["sensorName"], "温度 〈センサ1〉")
@@ -226,6 +229,7 @@ class LambdaFunctionTest(unittest.TestCase):
         result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
 
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1003")
         self.assertEqual(result[0]["sensorName"], "温度 〈センサ3〉")
@@ -260,6 +264,8 @@ class LambdaFunctionTest(unittest.TestCase):
 
         result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
                                                 lambda_function.createWhereParam(event))
+        
+        self.assertEqual(result[0]["equipmentId"], "E0001")
         self.assertEqual(result[0]["deviceId"], "700400014-F6CA332A")
         self.assertEqual(result[0]["sensorId"], "s1004")
         self.assertEqual(result[0]["sensorName"], "温度 〈センサ4〉")

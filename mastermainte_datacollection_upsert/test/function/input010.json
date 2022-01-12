@@ -3,6 +3,7 @@
 	"deviceId": "700400014-F6CA332AxxE",
 	"sensorId": "s1001xxxxxE",
 	"bodyRequest": {
+		"equipmentId": "E0001",
 		"sensorName": "温度 〈センサ1〉xxxxxxxxxxxxxxxxxxxxxE",
 		"sensorUnit": "℃xxxxxxxxxE",
 		"statusTrue": "xxxxxxxxxxE",

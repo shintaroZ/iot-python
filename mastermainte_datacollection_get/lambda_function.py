@@ -20,6 +20,7 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
+EQUIPMENT_ID = "equipmentId"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
@@ -180,6 +181,7 @@ def convertResult(result):
             parentTable = {}
 
         if len(parentTable) == 0:
+            parentTable[EQUIPMENT_ID] = result[i][EQUIPMENT_ID]
             parentTable[DEVICE_ID] = result[i][DEVICE_ID]
             parentTable[SENSOR_ID] = result[i][SENSOR_ID]
             parentTable[DATA_COLLECTION_SEQ] = result[i][DATA_COLLECTION_SEQ]
@@ -190,8 +192,8 @@ def convertResult(result):
             parentTable[COLLECTION_VALUE_TYPE] = result[i][COLLECTION_VALUE_TYPE]
             parentTable[COLLECTION_TYPE] = result[i][COLLECTION_TYPE]
             parentTable[REVISION_MAGNIFICATION] = result[i][REVISION_MAGNIFICATION]
-            parentTable[X_COORDINATE] = result[i][X_COORDINATE]
-            parentTable[Y_COORDINATE] = result[i][Y_COORDINATE]
+            # parentTable[X_COORDINATE] = result[i][X_COORDINATE]
+            # parentTable[Y_COORDINATE] = result[i][Y_COORDINATE]
             parentTable[SAVING_FLG] = result[i][SAVING_FLG]
             parentTable[LIMIT_CHECK_FLG] = result[i][LIMIT_CHECK_FLG]
 

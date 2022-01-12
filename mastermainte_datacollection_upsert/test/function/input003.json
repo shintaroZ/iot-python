@@ -3,6 +3,7 @@
 	"deviceId": "700400014-F6CA332A",
 	"sensorId": "s1004",
 	"bodyRequest": {
+		"equipmentId": "E0001",
 		"sensorName": "温度 〈センサ4〉",
 		"sensorUnit": "℃",
 		"collectionValueType": 0,

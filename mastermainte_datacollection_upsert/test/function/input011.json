@@ -3,6 +3,7 @@
 	"deviceId": "UT_deviceId001",
 	"sensorId": "sss001",
 	"bodyRequest": {
+		"equipmentId": "E0002",
 		"sensorName": "温度testSensor",
 		"statusTrue": "起動中",
 		"statusFalse": "停止中",

@@ -3,6 +3,7 @@
 	"deviceId": "700400014-F6CA332A",
 	"sensorId": "s1001",
 	"bodyRequest": {
+		"equipmentId": "E0001",
 		"sensorUnit": "℃",
 		"statusTrue": "",
 		"statusFalse": "",

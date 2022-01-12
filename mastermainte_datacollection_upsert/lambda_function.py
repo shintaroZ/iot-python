@@ -24,6 +24,7 @@ USER_NAME = ""
 # カラム名定数
 CLIENT_NAME = "clientName"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
+EQUIPMENT_ID = "equipmentId"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
 DELETE_FLG = "deleteFlg"
@@ -330,23 +331,10 @@ def createDataCollectionParams(event, version, deviceId, sensorId):
         event["insert_%s" % REVISION_MAGNIFICATION] = ""
         event["values_%s" % REVISION_MAGNIFICATION] = ""
 
-    if X_COORDINATE in event:
-        event["insert_%s" % X_COORDINATE] = ", `X_COORDINATE`"
-        event["values_%s" % X_COORDINATE] = ", '%s'" % event[X_COORDINATE]
-    else:
-        event["insert_%s" % X_COORDINATE] = ""
-        event["values_%s" % X_COORDINATE] = ""
-
-    if Y_COORDINATE in event:
-        event["insert_%s" % Y_COORDINATE] = ", `Y_COORDINATE`"
-        event["values_%s" % Y_COORDINATE] = ", '%s'" % event[Y_COORDINATE]
-    else:
-        event["insert_%s" % Y_COORDINATE] = ""
-        event["values_%s" % Y_COORDINATE] = ""
-
 
     event[DEVICE_ID] = deviceId
     event[SENSOR_ID] = sensorId
+    event[EQUIPMENT_ID] = event[EQUIPMENT_ID]
 
     return createCommonParams(event, version)
 
@@ -377,7 +365,7 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
-
+    
     LOGGER.info('マスタメンテナンス機能_データ定義マスタ更新開始 : %s' % event)
 
     # 入力チェック
