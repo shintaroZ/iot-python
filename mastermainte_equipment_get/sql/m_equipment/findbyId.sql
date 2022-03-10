@@ -21,7 +21,36 @@ select
     , me.VERSION as version 
 from
     M_EQUIPMENT me 
-    left outer join M_DATA_COLLECTION mdc 
+    left outer join (
+            select
+                m.EQUIPMENT_ID
+                , m.DEVICE_ID
+                , m.SENSOR_ID
+                , m.DATA_COLLECTION_SEQ
+                , m.SENSOR_NAME
+                , m.SENSOR_UNIT
+                , m.STATUS_TRUE
+                , m.STATUS_FALSE
+                , m.COLLECTION_VALUE_TYPE
+                , m.COLLECTION_TYPE
+                , m.REVISION_MAGNIFICATION
+                , m.DELETE_FLG
+                , m.VERSION 
+            from
+                M_DATA_COLLECTION m 
+            where
+                m.DELETE_FLG = 0 
+                and not exists ( 
+                    select
+                        1 
+                    from
+                        M_DATA_COLLECTION mdcSub 
+                    where
+                        m.DEVICE_ID = mdcSub.DEVICE_ID 
+                        and m.SENSOR_ID = mdcSub.SENSOR_ID 
+                        and m.VERSION < mdcSub.VERSION
+                )
+        ) mdc 
         on me.EQUIPMENT_ID = mdc.EQUIPMENT_ID
     left outer join M_LINK_FLG mlf 
         on mlf.DATA_COLLECTION_SEQ = mdc.DATA_COLLECTION_SEQ 
@@ -36,16 +65,6 @@ where
             me.EQUIPMENT_ID = meSub.EQUIPMENT_ID 
             and me.VERSION < meSub.VERSION
     ) 
-    and not exists (
-		select
-			1
-		from
-			M_DATA_COLLECTION mdcSub
-		where
-			mdc.DEVICE_ID = mdcSub.DEVICE_ID
-		and mdc.SENSOR_ID = mdcSub.SENSOR_ID
-		and mdc.VERSION < mdcSub.VERSION
-	)
 	%(p_whereParams)s
 	
 order by

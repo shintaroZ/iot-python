@@ -4,8 +4,8 @@ into `M_EQUIPMENT`(
     , `EQUIPMENT_NAME`
     , `DELETE_FLG`
     , `VERSION`
-    %(insert_xCoordinate)s
-    %(insert_yCoordinate)s
+    , `X_COORDINATE`
+    , `Y_COORDINATE`
     , `CREATED_AT`
     , `UPDATED_USER`
 )
@@ -14,8 +14,8 @@ values (
     , '%(equipmentName)s'
     , 0
     , %(version)d
-    %(values_xCoordinate)s
-    %(values_yCoordinate)s
+    , %(xCoordinate)s
+    , %(yCoordinate)s
     , '%(createdAt)s'
     , '%(updatedUser)s'
 );

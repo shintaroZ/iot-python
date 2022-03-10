@@ -143,16 +143,22 @@ def isArgument(event):
     # 必須項目がない場合は例外スロー
     if 0 < len(noneErrArray):
         raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
-
-    # 型チェック
-    typeErrArray = []
-    typeErrArray.append(X_COORDINATE) if (X_COORDINATE in eBody and initCommon.isValidateFloat(eBody[X_COORDINATE]) == False) else 0
-    typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in eBody and initCommon.isValidateFloat(eBody[Y_COORDINATE]) == False) else 0
-
-
-    # 型異常の場合は例外スロー
-    if 0 < len(typeErrArray):
-        raise TypeError("The parameters is type invalid. [%s]" % ",".join(typeErrArray))
+    
+    # # 数値型でnullの場合は0置き換え
+    # if (X_COORDINATE in eBody and eBody[X_COORDINATE] is None):
+    #     eBody[X_COORDINATE] = 0
+    # if (Y_COORDINATE in eBody and eBody[Y_COORDINATE] is None):
+    #     eBody[Y_COORDINATE] = 0
+    #
+    # # 型チェック
+    # typeErrArray = []
+    # typeErrArray.append(X_COORDINATE) if (X_COORDINATE in eBody and initCommon.isValidateFloat(eBody[X_COORDINATE]) == False) else 0
+    # typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in eBody and initCommon.isValidateFloat(eBody[Y_COORDINATE]) == False) else 0
+    #
+    #
+    # # 型異常の場合は例外スロー
+    # if 0 < len(typeErrArray):
+    #     raise TypeError("The parameters is type invalid. [%s]" % ",".join(typeErrArray))
 
     # データ長チェック
     lengthArray = []
@@ -199,20 +205,18 @@ def createWhereParam(event):
 # --------------------------------------------------
 def createEquipmentParams(eBody, version, equipmentId, before_xCoordinate, before_yCoordinate):
 
-    if X_COORDINATE in eBody:
-        eBody["insert_%s" % X_COORDINATE] = ", `X_COORDINATE`"
-        eBody["values_%s" % X_COORDINATE] = ", '%s'" % eBody[X_COORDINATE]
-    else:
-        eBody["insert_%s" % X_COORDINATE] = ", `X_COORDINATE`"
-        eBody["values_%s" % X_COORDINATE] = ", '%s'" % before_xCoordinate
+    # パラメータなしの場合は前回値
+    if X_COORDINATE not in eBody:
+        eBody[X_COORDINATE] = before_xCoordinate
+        
+    if Y_COORDINATE not in eBody:
+        eBody[Y_COORDINATE] = before_yCoordinate
 
-    if Y_COORDINATE in eBody:
-        eBody["insert_%s" % Y_COORDINATE] = ", `Y_COORDINATE`"
-        eBody["values_%s" % Y_COORDINATE] = ", '%s'" % eBody[Y_COORDINATE]
-    else:
-        eBody["insert_%s" % Y_COORDINATE] = ", `Y_COORDINATE`"
-        eBody["values_%s" % Y_COORDINATE] = ", '%s'" % before_yCoordinate
-
+    # None判定
+    if eBody[X_COORDINATE] is None:
+        eBody[X_COORDINATE] = "null"
+    if eBody[Y_COORDINATE] is None:
+        eBody[Y_COORDINATE] = "null"
 
     eBody[EQUIPMENT_ID] = equipmentId
 
@@ -250,16 +254,24 @@ def lambda_handler(event, context):
     # バージョン取得
     result = rds.fetchone(initCommon.getQuery("sql/m_equipment/findbyId.sql")
                           , createWhereParam(event))
+    
+    
+    # XY座標の前回値取得
+    resultBefore = rds.fetchone(initCommon.getQuery("sql/m_equipment/findbyIdunDel.sql")
+                          , createWhereParam(event))
 
-    # バージョンのインクリメント、XY座標の前回値
+    # バージョンのインクリメント、
     version = 0
-    before_xCoordinate = 0
-    before_yCoordinate = 0
     if result is not None and VERSION in result:
         version = result[VERSION] + 1
         LOGGER.info("登録対象バージョン [%d]" % version)
-        before_xCoordinate = result[X_COORDINATE]
-        before_yCoordinate = result[Y_COORDINATE]
+
+    # XY座標の前回値セット    
+    before_xCoordinate = None
+    before_yCoordinate = None
+    if resultBefore is not None and X_COORDINATE in resultBefore:
+        before_xCoordinate = resultBefore[X_COORDINATE]
+        before_yCoordinate = resultBefore[Y_COORDINATE]
 
     # body部
     eBody = event["bodyRequest"]

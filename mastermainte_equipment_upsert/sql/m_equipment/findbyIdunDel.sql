@@ -1,9 +1,11 @@
 select
-	me.VERSION as version
+	me.X_COORDINATE as xCoordinate
+    , me.Y_COORDINATE as yCoordinate
 from
     M_EQUIPMENT me
 where
-	not exists (
+	me.DELETE_FLG = 0 
+	and not exists (
 		select
 			1
 		from
