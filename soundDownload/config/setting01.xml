@@ -1,0 +1,17 @@
+[logger setting]
+loglevel        = INFO
+
+[rds setting]
+host            = mysql.cpp9recuwclr.ap-northeast-1.rds.amazonaws.com
+port            = 3306
+user            = admin
+password        = Yz8aBhFr
+db              = ins001
+connect_timeout = 30
+
+[bucket setting]
+bucket_name     = soundstrage
+client_name     = budonoki
+
+[url setting]
+expires_interval = 60

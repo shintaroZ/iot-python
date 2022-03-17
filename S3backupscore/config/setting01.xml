@@ -1,0 +1,22 @@
+[logger setting]
+loglevel        = INFO
+
+[rds setting]
+host            = mysql.cpp9recuwclr.ap-northeast-1.rds.amazonaws.com
+port            = 3306
+user            = admin
+password        = Yz8aBhFr
+db              = ins001
+connect_timeout = 3
+
+[mq setting]
+queue           = queue_dev
+
+host            = b-5f747e88-dbe9-4046-b613-b6004aa3d5cc.mq.ap-northeast-1.amazonaws.com
+port            = 5671
+user            = monone
+password        = BvVNwCtzy39z
+
+[bucket setting]
+bucket_name     = yourbacketname
+client_name     = budonoki
