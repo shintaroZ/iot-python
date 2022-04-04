@@ -40,6 +40,6 @@ class MqCommonTest(unittest.TestCase):
         resultCount = mqIns.getQueueCount("New_Error")
         resultMessage = mqIns.getQueueMessage("New_Error")
         
-        print("------------ %s end------------" % "test_mqCommon_001" )
+        print("------------ %s end------------" % "test_mqCommon_001x" )
         del mqIns
         
