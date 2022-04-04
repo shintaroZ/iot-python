@@ -117,6 +117,7 @@ def createWhereParam(event):
         whereParamArray.append("records.sensorid = '%s'" % sensorId)
 
     # and区切りの文字列返却
+    print (" AND ".join(whereParamArray))
     return " AND ".join(whereParamArray)
 
 # --------------------------------------------------

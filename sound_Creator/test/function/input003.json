@@ -1,0 +1,35 @@
+{
+  "setting": "config/setting01.xml",
+  "dataType": 1,
+  "routingKey": "Clean_Error_Marking",
+  "recordsCount": 2,
+  "records": [
+    {
+      "tenantId": "2",
+      "status": 1,
+      "filename": "20210422165001.mp3",
+      "timestamp": 1619077801896,
+      "chunk_no": 0,
+      "chunk_total": 1,
+      "data": "ccccc"
+    },
+    {
+      "tenantId": "1",
+      "status": 1,
+      "filename": "20210422165000.mp3",
+      "timestamp": 1619077801895,
+      "chunk_no": 0,
+      "chunk_total": 2,
+      "data": "aaaaa"
+    },
+    {
+      "tenantId": "1",
+      "status": 1,
+      "filename": "20210422165000.mp3",
+      "timestamp": 1619077801895,
+      "chunk_no": 1,
+      "chunk_total": 2,
+      "data": "bbbbb"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 select
     FILE_NAME as fileName
-    ,EDGE_NAME as edgeName
-    ,CREATED_DATETIME as createdDatetime
 from
     T_SOUNDFILE_HISTORY
 where
-    SOUND_ID = '%(p_sound_id)s'
+    DATA_COLLECTION_SEQ = %(p_dataCollectionSeq)d
+and CREATED_DATETIME = '%(p_createdDateTime)s'
+and FILE_TYPE = %(p_fileType)d

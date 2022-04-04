@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>amqpconsumer</name>
+	<name>sound_Creator</name>
 	<comment></comment>
 	<projects>
+		<project>python</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
