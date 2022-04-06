@@ -1,5 +1,6 @@
 select
-    mdc.EQUIPMENT_ID as equipmentId
+    mdc.EDGE_TYPE as edgeType
+    , mdc.EQUIPMENT_ID as equipmentId
     , mdc.DEVICE_ID as deviceId
     , mdc.SENSOR_ID as sensorId
     , mdc.DATA_COLLECTION_SEQ as dataCollectionSeq
@@ -10,8 +11,6 @@ select
     , mdc.COLLECTION_VALUE_TYPE as collectionValueType
     , mdc.COLLECTION_TYPE as collectionType
     , mdc.REVISION_MAGNIFICATION as revisionMagnification
---    , mdc.X_COORDINATE as xCoordinate
---    , mdc.Y_COORDINATE as yCoordinate
     , mlf.SAVING_FLG as savingFlg
     , mlf.LIMIT_CHECK_FLG as limitCheckFlg
 

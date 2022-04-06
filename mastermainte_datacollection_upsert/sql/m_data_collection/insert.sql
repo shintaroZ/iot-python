@@ -1,6 +1,7 @@
 insert
 into `M_DATA_COLLECTION`(
     `DATA_COLLECTION_SEQ`
+    , `EDGE_TYPE`
     , `EQUIPMENT_ID`
     , `DEVICE_ID`
     , `SENSOR_ID`
@@ -18,6 +19,7 @@ into `M_DATA_COLLECTION`(
 )
 values (
     %(dataCollectionSeq)d
+    , %(edgeType)d
     , '%(equipmentId)s'
     , '%(deviceId)s'
     , '%(sensorId)s'

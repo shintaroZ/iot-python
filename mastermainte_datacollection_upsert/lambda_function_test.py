@@ -8,6 +8,7 @@ import lambda_function
 import pymysql
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
+import sys
 
 
 class LambdaFunctionTest(unittest.TestCase):
@@ -33,7 +34,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # 全項目ありの新規
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
-        print("---test_lambda_handler_001---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input001.json')
 
         # 事前にマスタ削除
@@ -56,7 +57,7 @@ class LambdaFunctionTest(unittest.TestCase):
                                                 lambda_function.createWhereParam(event))
 
         dcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_data_collection/find.sql"))
-        lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
+        # lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
 
         self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
 
@@ -88,7 +89,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # データ定義マスタの項目なしの新規
     # ----------------------------------------------------------------------
     def test_lambda_handler_002(self):
-        print("---test_lambda_handler_002---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input002.json')
 
         # 事前にマスタ削除
@@ -110,7 +111,7 @@ class LambdaFunctionTest(unittest.TestCase):
                                                 lambda_function.createWhereParam(event))
 
         dcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_data_collection/find.sql"))
-        lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
+        # lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
 
 
         self.assertEqual(result[0]["equipmentId"], "E0001")
@@ -146,7 +147,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # 閾値なしの新規
     # ----------------------------------------------------------------------
     def test_lambda_handler_003(self):
-        print("---test_lambda_handler_003---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input003.json')
 
         # 事前にマスタ削除
@@ -182,7 +183,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # 全項目ありの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_004(self):
-        print("---test_lambda_handler_004---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input004.json')
 
         # 実行
@@ -220,7 +221,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # データ定義マスタの項目なしの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_005(self):
-        print("---test_lambda_handler_005---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input005.json')
 
         # 実行
@@ -256,7 +257,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # 閾値なしの更新
     # ----------------------------------------------------------------------
     def test_lambda_handler_006(self):
-        print("---test_lambda_handler_006---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input006.json')
 
         # 実行
@@ -280,7 +281,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # データ定義マスタの必須項目なし
     # ----------------------------------------------------------------------
     def test_lambda_handler_007(self):
-        print("---test_lambda_handler_007---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input007.json')
 
         isException = False
@@ -295,7 +296,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # 閾値マスタの歯抜けあり
     # ----------------------------------------------------------------------
     def test_lambda_handler_008(self):
-        print("---test_lambda_handler_008---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input008.json')
 
         isException = False
@@ -310,7 +311,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # データ型不正
     # ----------------------------------------------------------------------
     def test_lambda_handler_009(self):
-        print("---test_lambda_handler_009---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input009.json')
 
         isException = False
@@ -324,7 +325,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # データ長不正
     # ----------------------------------------------------------------------
     def test_lambda_handler_010(self):
-        print("---test_lambda_handler_010---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input010.json')
 
         isException = False
@@ -339,7 +340,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # バージョン採番
     # ----------------------------------------------------------------------
     def test_lambda_handler_011(self):
-        print("---test_lambda_handler_011---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input011.json')
 
         # 削除
@@ -379,3 +380,58 @@ class LambdaFunctionTest(unittest.TestCase):
                                                 lambda_function.createWhereParam(event))
 
         self.assertEqual(2, result["version"])
+        
+        
+    # ----------------------------------------------------------------------
+    # Monone用のマスタ更新が行われること。
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_012(self):
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
+        event = initCommon.readFileToJson('test/function/input012.json')
+
+        # 事前にマスタ削除
+        result =RDS.fetchone(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        if result is not None:
+            dataCollectionSeq = result["dataCollectionSeq"]
+            RDS.execute(initCommon.getQuery("test/sql/m_limit/delete.sql"),{"dataCollectionSeq" : dataCollectionSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_limit_check/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_link_flg/delete.sql"), {"dataCollectionSeq" : dataCollectionSeq})
+            RDS.execute(initCommon.getQuery("test/sql/m_data_collection/delete.sql"), {"deviceId" : event["deviceId"], "sensorId" : event["sensorId"]})
+            RDS.commit()
+
+        # 実行
+        lambda_function.lambda_handler(event, None)
+
+        # assert用にselect
+        result =RDS.fetchall(initCommon.getQuery("test/sql/m_data_collection/findbyId.sql"),
+                                                lambda_function.createWhereParam(event))
+
+        dcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_data_collection/find.sql"))
+        # lcSeqResult =RDS.fetchone(initCommon.getQuery("test/sql/m_seq_limit_check/find.sql"))
+
+        self.assertEqual(result[0]["dataCollectionSeq"], dcSeqResult["seqNo"])
+
+        self.assertEqual(result[0]["edgeType"], 2)
+        self.assertEqual(result[0]["equipmentId"], "M0001")
+        self.assertEqual(result[0]["deviceId"], "3")
+        self.assertEqual(result[0]["sensorId"], "3")
+        self.assertEqual(result[0]["sensorName"], "Edge03")
+        self.assertEqual(result[0]["sensorUnit"], "")
+        self.assertEqual(result[0]["statusTrue"], "")
+        self.assertEqual(result[0]["statusFalse"], "")
+        self.assertEqual(result[0]["collectionValueType"], 0)
+        self.assertEqual(result[0]["collectionType"], 1)
+        self.assertEqual(result[0]["revisionMagnification"], None)
+        self.assertEqual(result[0]["savingFlg"], 0)
+        self.assertEqual(result[0]["limitCheckFlg"], 1)
+        self.assertEqual(result[0]["limitCountType"], 1)
+        self.assertEqual(result[0]["limitCount"], 5)
+        self.assertEqual(result[0]["limitCountResetRange"], 3)
+        self.assertEqual(result[0]["actionRange"], 2)
+        self.assertEqual(result[0]["nextAction"], 1)
+        self.assertEqual(result[0]["limitSubNo"], 1)
+        self.assertEqual(result[0]["limitJudgeType"], 1)
+        self.assertEqual(result[0]["limitValue"], 1)
+        

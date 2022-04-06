@@ -3,7 +3,8 @@
 	"deviceId": "700400014-F6CA332AxxE",
 	"sensorId": "s1001xxxxxE",
 	"bodyRequest": {
-		"equipmentId": "E0001",
+		"edgeType": 256,
+		"equipmentId": "ExxxxxxxxE",
 		"sensorName": "温度 〈センサ1〉xxxxxxxxxxxxxxxxxxxxxE",
 		"sensorUnit": "℃xxxxxxxxxE",
 		"statusTrue": "xxxxxxxxxxE",
@@ -11,8 +12,6 @@
 		"collectionValueType": 256,
 		"collectionType": 65536,
 		"revisionMagnification": 0.01,
-		"xCoordinate": 1234.56,
-		"yCoordinate": 2345.67,
 		"savingFlg": 256,
 		"limitCheckFlg": 256,
 		"limitCountType": 256,

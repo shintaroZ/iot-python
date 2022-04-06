@@ -24,6 +24,7 @@ USER_NAME = ""
 # カラム名定数
 CLIENT_NAME = "clientName"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
+EDGE_TYPE = "edgeType"
 EQUIPMENT_ID = "equipmentId"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
@@ -173,11 +174,12 @@ def isArgument(event):
 
     # 型チェック
     typeErrArray = []
+    typeErrArray.append(EDGE_TYPE) if (initCommon.isValidateNumber(eBody[EDGE_TYPE]) == False) else 0
     typeErrArray.append(COLLECTION_VALUE_TYPE) if (initCommon.isValidateNumber(eBody[COLLECTION_VALUE_TYPE]) == False) else 0
     typeErrArray.append(COLLECTION_TYPE) if (initCommon.isValidateNumber(eBody[COLLECTION_TYPE]) == False) else 0
     typeErrArray.append(REVISION_MAGNIFICATION) if (REVISION_MAGNIFICATION in eBody and initCommon.isValidateFloat(eBody[REVISION_MAGNIFICATION]) == False) else 0
-    typeErrArray.append(X_COORDINATE) if (X_COORDINATE in eBody and initCommon.isValidateFloat(eBody[X_COORDINATE]) == False) else 0
-    typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in eBody and initCommon.isValidateFloat(eBody[Y_COORDINATE]) == False) else 0
+    # typeErrArray.append(X_COORDINATE) if (X_COORDINATE in eBody and initCommon.isValidateFloat(eBody[X_COORDINATE]) == False) else 0
+    # typeErrArray.append(Y_COORDINATE) if (Y_COORDINATE in eBody and initCommon.isValidateFloat(eBody[Y_COORDINATE]) == False) else 0
     typeErrArray.append(SAVING_FLG) if (initCommon.isValidateNumber(eBody[SAVING_FLG]) == False) else 0
     typeErrArray.append(LIMIT_CHECK_FLG) if (initCommon.isValidateNumber(eBody[LIMIT_CHECK_FLG]) == False) else 0
     typeErrArray.append(LIMIT_COUNT_TYPE) if (LIMIT_COUNT_TYPE in eBody and initCommon.isValidateNumber(eBody[LIMIT_COUNT_TYPE]) == False) else 0
@@ -231,6 +233,8 @@ def isArgument(event):
     lengthArray = []
     # lengthArray.append(DEVICE_ID) if (20 < len(eBody[DEVICE_ID])) else 0
     # lengthArray.append(SENSOR_ID) if (10 < len(eBody[SENSOR_ID])) else 0
+    lengthArray.append(EDGE_TYPE) if (MAX_TYNYINT_UNSIGNED < eBody[EDGE_TYPE]) else 0
+    lengthArray.append(EQUIPMENT_ID) if (10 < len(eBody[EQUIPMENT_ID])) else 0
     lengthArray.append(SENSOR_NAME) if (30 < len(eBody[SENSOR_NAME])) else 0
     lengthArray.append(SENSOR_UNIT) if (SENSOR_UNIT in eBody and 10 < len(eBody[SENSOR_UNIT])) else 0
     lengthArray.append(STATUS_TRUE) if (STATUS_TRUE in eBody and 10 < len(eBody[STATUS_TRUE])) else 0

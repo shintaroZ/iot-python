@@ -3,6 +3,7 @@
 	"deviceId": "700400014-F6CA332A",
 	"sensorId": "s1001",
 	"bodyRequest": {
+		"edgeType": 1,
 		"equipmentId": "E0001",
 		"sensorName": "温度 〈センサ1〉",
 		"sensorUnit": "℃",
@@ -11,8 +12,6 @@
 		"collectionValueType": 0,
 		"collectionType": 1,
 		"revisionMagnification": 0.01,
-		"xCoordinate": 1234.56,
-		"yCoordinate": 2345.67,
 		"savingFlg": 0,
 		"limitCheckFlg": 1,
 		"limitCountType": 1,
