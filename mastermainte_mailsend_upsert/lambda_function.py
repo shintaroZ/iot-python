@@ -33,6 +33,9 @@ MAIL_SUBJECT = "mailSubject"
 MAIL_TEXT_HEADER = "mailTextHeader"
 MAIL_TEXT_BODY = "mailTextBody"
 MAIL_TEXT_FOOTER = "mailTextFooter"
+EQUIPMENT_RECORDS = "equipmentRecords"
+EQUIPMENT_ID = "equipmentId"
+
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -270,6 +273,16 @@ def lambda_handler(event, context):
         # メール通知マスタのINSERT
         LOGGER.info("メール通知マスタのINSERT [mailSendId = %d]" % event[MAIL_SEND_ID])
         rds.execute(initCommon.getQuery("sql/m_mail_send/insert.sql"), createCommonParams(event[MAIL_SEND_ID], event["bodyRequest"], version, mailSendSeq) )
+
+        # メール通知×設備マスタのINSERT
+        for eqpRecord in event["bodyRequest"][EQUIPMENT_RECORDS]:
+            LOGGER.info("メール通知×設備マスタのINSERT [mailSendId = %d, equipmentId = %s]" % (event[MAIL_SEND_ID], eqpRecord[EQUIPMENT_ID]))
+            rds.execute(initCommon.getQuery("sql/m_mail_send_equipment/insert.sql"),
+                        {
+                            MAIL_SEND_SEQ : mailSendSeq,
+                            EQUIPMENT_ID  : eqpRecord[EQUIPMENT_ID],
+                            CREATED_AT    : initCommon.getSysDateJst()
+                        })
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()

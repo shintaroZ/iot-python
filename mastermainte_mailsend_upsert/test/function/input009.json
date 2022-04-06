@@ -1,6 +1,6 @@
 {
 	"clientName": "eg-iot-develop",
-	"mailSendId": 3,
+	"mailSendId": 1,
 	"bodyRequest" : {
 		"emailAddress": "ccc@email.co.jp",
 		"sendWeekType": 0,
@@ -8,7 +8,8 @@
 		"sendTimeFrom": "100000",
 		"sendTimeTo": "190000",
 		"mailSubject": "テスト件名1",
-		"mailTextBody": "メール本文1********************"
+		"mailTextBody": "メール本文1********************",
+		"equipmentRecords" : []
 	},
 	"idToken" : "eyJraWQiOiJ1UXBkSHRxR240aXhNNmVnT1FZVGN5TXA1UXRwbHRENVdOaEtkU2JWbmNjPSIsImFsZyI6IlJTMjU2In0.eyJhdF9oYXNoIjoiTUtEa2phdFdMTW1lRm9nNXFiQ21TZyIsInN1YiI6Ijc2NjA5OTM4LTRlOGMtNDc4ZS1iMDk2LTdmMTIxNzE0Y2EwNCIsImNvZ25pdG86Z3JvdXBzIjpbImVnLWlvdC1kZXZlbG9wIiwiZGV2R3JvdXAiXSwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5hcC1ub3J0aGVhc3QtMS5hbWF6b25hd3MuY29tXC9hcC1ub3J0aGVhc3QtMV96dFI3RlppYTkiLCJjb2duaXRvOnVzZXJuYW1lIjoiZGV2dXNlciIsImNvZ25pdG86cm9sZXMiOlsiYXJuOmF3czppYW06Ojk2ODUwNjcyMTE0NDpyb2xlXC9zaW1wbGVJb3QiXSwiYXVkIjoiMTRxaXZsbjFsODU1NDJ0MWY5cWtmb283bWEiLCJldmVudF9pZCI6ImFiOWNkNDVhLWE3ZDktNGI2OS05Mzc5LTYwN2FlOTYwMThjNiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNjI5Mjk2MzM3LCJleHAiOjE2MjkyOTk5MzcsImlhdCI6MTYyOTI5NjMzNywiZW1haWwiOiJzX290b2lAbWF0aXNzZS5jby5qcCJ9.HlBtRoGRguco8AlCGwlRQBk5v9yUbmuuJgYW92wEG_piKFBW_LE5LNJumc65Y1e0xq4HTYYJ0w2ieqheFJ01CMF8pSk0ajwDTT4deKYZ6om5bMH8ICuwWdJTOb49E6bfk8iEaJNg-0bEBYF2a9y1W2Z0wWE4QSUDUgmGLYOt3N7iWJ5mt70pCgkt97azIKt0I9_uo_DPYDtsGpyS9DWQnGM-e_42XYW7D0ilIWmvn24LpH_NVRlpgNpVfaQ2eGuEm0RStlW6Bc1Dgz8U-54-aZUiREcp4UXLDfvnwUOwm7QflpQK8CrRzr3lKx0ohRhiPsttQFtLHnGg8SyArWW3Jw"
 }
