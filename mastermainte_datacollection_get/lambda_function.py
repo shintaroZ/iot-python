@@ -20,6 +20,7 @@ RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 
 # カラム名定数
+EDGE_TYPE = "edgeType"
 EQUIPMENT_ID = "equipmentId"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
@@ -30,6 +31,7 @@ STATUS_TRUE = "statusTrue"
 STATUS_FALSE = "statusFalse"
 COLLECTION_VALUE_TYPE = "collectionValueType"
 COLLECTION_TYPE = "collectionType"
+COLLECTION_TYPE_NAME = "collectionTypeName"
 REVISION_MAGNIFICATION = "revisionMagnification"
 X_COORDINATE = "xCoordinate"
 Y_COORDINATE = "yCoordinate"
@@ -181,6 +183,7 @@ def convertResult(result):
             parentTable = {}
 
         if len(parentTable) == 0:
+            parentTable[EDGE_TYPE] = result[i][EDGE_TYPE]
             parentTable[EQUIPMENT_ID] = result[i][EQUIPMENT_ID]
             parentTable[DEVICE_ID] = result[i][DEVICE_ID]
             parentTable[SENSOR_ID] = result[i][SENSOR_ID]
@@ -191,9 +194,8 @@ def convertResult(result):
             parentTable[STATUS_FALSE] = result[i][STATUS_FALSE]
             parentTable[COLLECTION_VALUE_TYPE] = result[i][COLLECTION_VALUE_TYPE]
             parentTable[COLLECTION_TYPE] = result[i][COLLECTION_TYPE]
+            parentTable[COLLECTION_TYPE_NAME] = result[i][COLLECTION_TYPE_NAME]
             parentTable[REVISION_MAGNIFICATION] = result[i][REVISION_MAGNIFICATION]
-            # parentTable[X_COORDINATE] = result[i][X_COORDINATE]
-            # parentTable[Y_COORDINATE] = result[i][Y_COORDINATE]
             parentTable[SAVING_FLG] = result[i][SAVING_FLG]
             parentTable[LIMIT_CHECK_FLG] = result[i][LIMIT_CHECK_FLG]
 
