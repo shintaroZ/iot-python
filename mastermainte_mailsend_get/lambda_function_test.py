@@ -51,7 +51,7 @@ class LambdaFunctionTest(unittest.TestCase):
         for r in resultJson["records"]:
             if r["mailSendId"] == 1:
                 self.assertEqual(r["version"], 1)
-                self.assertEqual(r["mailSubject"], "閾値メールSubject2")
+                self.assertEqual(r["mailSubject"], "埋め込みサンプル件名")
 
     # ----------------------------------------------------------------------
     # 追加⇨削除
@@ -103,4 +103,4 @@ class LambdaFunctionTest(unittest.TestCase):
         for r in resultJson["records"]:
             if r["mailSendId"] == 1:
                 self.assertEqual(r["version"], 1)
-                self.assertEqual(r["mailSubject"], "閾値メールSubject2")
+                self.assertEqual(r["mailSubject"], "埋め込みサンプル件名")

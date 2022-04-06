@@ -32,6 +32,8 @@ MAIL_SUBJECT = "mailSubject"
 MAIL_TEXT_HEADER = "mailTextHeader"
 MAIL_TEXT_BODY = "mailTextBody"
 MAIL_TEXT_FOOTER = "mailTextFooter"
+EQUIPMENT_RECORDS = "equipmentRecords"
+EQUIPMENT_ID = "equipmentId"
 
 CREATED_AT = "createdAt"
 UPDATED_AT = "updatedAt"
@@ -136,7 +138,66 @@ def isArgument(event):
 # --------------------------------------------------
 def convertResult(result):
     
-    reResult = {"records" : result}
+     # 戻り値整形
+    reList = []
+    beforeKeyTable = {}
+    childList = []
+    parentTable = {}
+    parentList =[]
+
+    dataCollectionTable = {}
+    dataCollectionList = []
+    limitCheckTable = {}
+    limitCheckList = []
+    limitTable = {}
+    limitList = []
+    beforeKeyTable = {}
+
+    for i in range(len(result)):
+
+        # キーが異なる場合にセット
+        if (MAIL_SEND_ID in beforeKeyTable and beforeKeyTable[MAIL_SEND_ID] != result[i][MAIL_SEND_ID]):
+
+            if 0 < len(childList):
+                parentTable[EQUIPMENT_RECORDS] = childList
+            reList.append(parentTable)
+            # 一時領域クリア
+            childList = []
+            parentTable = {}
+
+        if len(parentTable) == 0:
+            parentTable[MAIL_SEND_ID] = result[i][MAIL_SEND_ID]
+            parentTable[EMAIL_ADDRESS] = result[i][EMAIL_ADDRESS]
+            parentTable[SEND_WEEK_TYPE] = result[i][SEND_WEEK_TYPE]
+            parentTable[SEND_FREQUANCY] = result[i][SEND_FREQUANCY]
+            parentTable[SEND_TIME_FROM] = result[i][SEND_TIME_FROM]
+            parentTable[SEND_TIME_TO] = result[i][SEND_TIME_TO]
+            parentTable[MAIL_SUBJECT] = result[i][MAIL_SUBJECT]
+            parentTable[MAIL_TEXT_HEADER] = result[i][MAIL_TEXT_HEADER]
+            parentTable[MAIL_TEXT_BODY] = result[i][MAIL_TEXT_BODY]
+            parentTable[MAIL_TEXT_FOOTER] = result[i][MAIL_TEXT_FOOTER]
+            parentTable[EQUIPMENT_RECORDS] = [] # 予め空配列を設定
+
+            parentTable[CREATED_AT] = result[i][CREATED_AT]
+            parentTable[UPDATED_AT] = result[i][UPDATED_AT]
+            parentTable[UPDATED_USER] = result[i][UPDATED_USER]
+            parentTable[VERSION] = result[i][VERSION]
+
+            # キー項目を退避
+            beforeKeyTable[MAIL_SEND_ID] = result[i][MAIL_SEND_ID]
+
+        # 可変部
+        if result[i][EQUIPMENT_ID] is not None:
+            childTable = {}
+            childTable[EQUIPMENT_ID] = result[i][EQUIPMENT_ID]
+            childList.append(childTable)
+
+    # 最終ループ用
+    if 0 < len(childList):
+        parentTable[EQUIPMENT_RECORDS] = childList
+    reList.append(parentTable)
+
+    reResult = {"records" : reList}
     
     # Dict→str形式に変換して返却
     return json.dumps(reResult, ensure_ascii=False, default=initCommon.json_serial)
