@@ -2,148 +2,68 @@
   "clientName": "eg-iot-develop",
   "records": [
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:48:11.796000"
+      "dataCollectionSeq": "387",
+      "receivedDatetime": "2022/04/05 18:46:31.356000"
     },
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:48:21.742000"
+      "dataCollectionSeq": "387",
+      "receivedDatetime": "2022/04/05 18:47:01.189000"
     },
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:48:31.734000"
+      "dataCollectionSeq": "494",
+      "receivedDatetime": "2022/04/05 18:46:31.356000"
     },
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:48:41.785000"
+      "dataCollectionSeq": "494",
+      "receivedDatetime": "2022/04/05 18:47:01.189000"
     },
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:48:51.773000"
+      "dataCollectionSeq": "483",
+      "receivedDatetime": "2022/04/05 18:46:31.356000"
     },
     {
-      "dataCollectionSeq": "308",
-      "receivedDatetime": "2021/09/16 15:49:01.641000"
+      "dataCollectionSeq": "483",
+      "receivedDatetime": "2022/04/05 18:47:01.189000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:48:11.755000"
+      "dataCollectionSeq": "486",
+      "receivedDatetime": "2022/04/05 18:46:31.366000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:48:21.762000"
+      "dataCollectionSeq": "486",
+      "receivedDatetime": "2022/04/05 18:47:01.290000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:48:31.805000"
+      "dataCollectionSeq": "386",
+      "receivedDatetime": "2022/04/05 18:46:31.366000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:48:41.754000"
+      "dataCollectionSeq": "386",
+      "receivedDatetime": "2022/04/05 18:47:01.290000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:48:51.763000"
+      "dataCollectionSeq": "487",
+      "receivedDatetime": "2022/04/05 18:46:31.366000"
     },
     {
-      "dataCollectionSeq": "318",
-      "receivedDatetime": "2021/09/16 15:49:01.803000"
+      "dataCollectionSeq": "487",
+      "receivedDatetime": "2022/04/05 18:47:01.290000"
     },
     {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:48:11.898000"
+      "dataCollectionSeq": "488",
+      "receivedDatetime": "2022/04/05 18:46:30.736000"
     },
     {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:48:21.782000"
+      "dataCollectionSeq": "488",
+      "receivedDatetime": "2022/04/05 18:47:01.382000"
     },
     {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:48:31.805000"
+      "dataCollectionSeq": "492",
+      "receivedDatetime": "2022/04/05 18:46:30.779000"
     },
     {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:48:41.795000"
-    },
-    {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:48:51.794000"
-    },
-    {
-      "dataCollectionSeq": "319",
-      "receivedDatetime": "2021/09/16 15:49:01.803000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:48:11.888000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:48:21.691000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:48:31.623000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:48:41.550000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:48:51.784000"
-    },
-    {
-      "dataCollectionSeq": "317",
-      "receivedDatetime": "2021/09/16 15:49:01.813000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:48:11.868000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:48:21.813000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:48:31.734000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:48:41.795000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:48:51.855000"
-    },
-    {
-      "dataCollectionSeq": "313",
-      "receivedDatetime": "2021/09/16 15:49:01.762000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:48:11.868000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:48:21.813000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:48:31.734000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:48:41.795000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:48:51.855000"
-    },
-    {
-      "dataCollectionSeq": "314",
-      "receivedDatetime": "2021/09/16 15:49:01.762000"
+      "dataCollectionSeq": "492",
+      "receivedDatetime": "2022/04/05 18:47:01.403000"
     }
   ]
 }

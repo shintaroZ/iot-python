@@ -289,12 +289,25 @@ def createPublicTimeseriesWhereParam(limitCountResetRange, cnvTimeStamp):
 
 
 # --------------------------------------------------
+# limit条件のパラメータを作成
+# --------------------------------------------------
+def createPublicTimeseriesLimitParam(limitCountType, limitCount):
+
+    paramStr = ""
+    # 閾値成立回数条件が0:継続のみ
+    if limitCountType == 0:
+        # センサの受信タイムスタンプから閾値成立回数リセット分の範囲条件を追加
+        paramStr = "limit %d" % limitCount
+    
+    return paramStr
+
+# --------------------------------------------------
 # 可変型パラメータを作成して返却する。
 # --------------------------------------------------
 def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=None
                               , limitSubNo=None, timeStamp=None, mailSendSeq=None
                               , sendStatus=None, whereParam="", whereSubParam=""
-                              , detectionDateTime=None):
+                              , detectionDateTime=None, limitParam=None):
 
     params = {}
     params[DEVICE_ID] = deviceId
@@ -306,6 +319,7 @@ def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=No
     params[SEND_STATUS] = sendStatus
     params["whereParam"] = whereParam
     params["whereSubParam"] = whereSubParam
+    params["limitParam"] = limitParam
     params[DETECTION_DATETIME] = detectionDateTime
 
     return createCommonParams(params)
@@ -327,7 +341,7 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
-    # setLogger(initCommon.getLogger("DEBUG"))
+    setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('閾値判定機能開始 : %s' % event)
 
@@ -373,9 +387,13 @@ def lambda_handler(event, context):
             publicRecords = rds.fetchall(initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
                                          , createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
                                                                      , detectionDateTime = detectionDateTimeStr
-                                                                     , whereParam = createPublicTimeseriesWhereParam(limitInfoArray[0][LIMIT_COUNT_RESET_RANGE], cnvTimeStamp)))
+                                                                     , whereParam = createPublicTimeseriesWhereParam(limitInfoArray[0][LIMIT_COUNT_RESET_RANGE], cnvTimeStamp)
+                                                                     , limitParam = createPublicTimeseriesLimitParam(limitInfoArray[0][LIMIT_COUNT_TYPE],
+                                                                                                                     limitInfoArray[0][LIMIT_COUNT])
+                                                                     )
+                                         )
             if 0 < len(publicRecords):
-                LOGGER.debug("閾値判定対象の過去データ:%s" % publicRecords)
+                LOGGER.debug("閾値判定対象の過去データ件数:%d" % len(publicRecords))
 
         # 前回値を退避
         beforeMap[DATA_COLLECTION_SEQ] = argsDataCollectionSeq
