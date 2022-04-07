@@ -162,6 +162,8 @@ def isArgument(event):
     # noneErrArray.append(CLIENT_NAME) if (CLIENT_NAME not in eBody) else 0
     # noneErrArray.append(DEVICE_ID)if (DEVICE_ID not in eBody) else 0
     # noneErrArray.append(SENSOR_ID) if (SENSOR_ID not in eBody) else 0
+    noneErrArray.append(EDGE_TYPE) if (SENSOR_NAME not in eBody) else 0
+    noneErrArray.append(EQUIPMENT_ID) if (SENSOR_NAME not in eBody) else 0
     noneErrArray.append(SENSOR_NAME) if (SENSOR_NAME not in eBody) else 0
     noneErrArray.append(COLLECTION_VALUE_TYPE) if (COLLECTION_VALUE_TYPE not in eBody) else 0
     noneErrArray.append(COLLECTION_TYPE) if (COLLECTION_TYPE not in eBody) else 0
