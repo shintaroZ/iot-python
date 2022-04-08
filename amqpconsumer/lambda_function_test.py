@@ -8,6 +8,8 @@ import lambda_function
 import pymysql
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
+import mqCommon # カスタムレイヤー
+import sys
 
 
 class LambdaFunctionTest(unittest.TestCase):
@@ -33,7 +35,7 @@ class LambdaFunctionTest(unittest.TestCase):
     # deviceId,sensorIdなし
     # ----------------------------------------------------------------------
     def test_lambda_handler_001(self):
-        print("---test_lambda_handler_001---")
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
 
         # 実行
         event = initCommon.readFileToJson('test/function/input001.json')

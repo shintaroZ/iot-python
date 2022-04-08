@@ -27,6 +27,7 @@ Y_COORDINATE = "yCoordinate"
 
 DATA_COLLECTION_RECORDS = "datacollectionRecords"
 
+EDGE_TYPE = "edgeType"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
@@ -36,6 +37,7 @@ STATUS_TRUE = "statusTrue"
 STATUS_FALSE = "statusFalse"
 COLLECTION_VALUE_TYPE = "collectionValueType"
 COLLECTION_TYPE = "collectionType"
+COLLECTION_TYPE_NAME = "collectionTypeName"
 REVISION_MAGNIFICATION = "revisionMagnification"
 SAVING_FLG = "savingFlg"
 LIMIT_CHECK_FLG = "limitCheckFlg"
@@ -190,6 +192,7 @@ def convertResult(result):
         # 可変部
         if result[i][DEVICE_ID] is not None:
             childTable = {}
+            childTable[EDGE_TYPE] = result[i][EDGE_TYPE]
             childTable[DEVICE_ID] = result[i][DEVICE_ID]
             childTable[SENSOR_ID] = result[i][SENSOR_ID]
             childTable[DATA_COLLECTION_SEQ] = result[i][DATA_COLLECTION_SEQ]
@@ -199,6 +202,7 @@ def convertResult(result):
             childTable[STATUS_FALSE] = result[i][STATUS_FALSE]
             childTable[COLLECTION_VALUE_TYPE] = result[i][COLLECTION_VALUE_TYPE]
             childTable[COLLECTION_TYPE] = result[i][COLLECTION_TYPE]
+            childTable[COLLECTION_TYPE_NAME] = result[i][COLLECTION_TYPE_NAME]
             childTable[REVISION_MAGNIFICATION] = result[i][REVISION_MAGNIFICATION]
             childTable[SAVING_FLG] = result[i][SAVING_FLG]
             childTable[LIMIT_CHECK_FLG] = result[i][LIMIT_CHECK_FLG]

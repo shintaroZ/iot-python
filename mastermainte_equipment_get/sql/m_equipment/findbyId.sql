@@ -3,6 +3,7 @@ select
     , me.EQUIPMENT_NAME as equipmentName
     , me.X_COORDINATE as xCoordinate
     , me.Y_COORDINATE as yCoordinate
+    , mdc.EDGE_TYPE as edgeType
     , mdc.DEVICE_ID as deviceId
     , mdc.SENSOR_ID as sensorId
     , mdc.DATA_COLLECTION_SEQ as dataCollectionSeq
@@ -12,6 +13,7 @@ select
     , ifnull(mdc.STATUS_FALSE, '') as statusFalse
     , mdc.COLLECTION_VALUE_TYPE as collectionValueType
     , mdc.COLLECTION_TYPE as collectionType
+    , mct.COLLECTION_TYPE_NAME as collectionTypeName
     , mdc.REVISION_MAGNIFICATION as revisionMagnification
     , mlf.SAVING_FLG as savingFlg
     , mlf.LIMIT_CHECK_FLG as limitCheckFlg
@@ -23,7 +25,8 @@ from
     M_EQUIPMENT me 
     left outer join (
             select
-                m.EQUIPMENT_ID
+                m.EDGE_TYPE
+                , m.EQUIPMENT_ID
                 , m.DEVICE_ID
                 , m.SENSOR_ID
                 , m.DATA_COLLECTION_SEQ
@@ -54,6 +57,9 @@ from
         on me.EQUIPMENT_ID = mdc.EQUIPMENT_ID
     left outer join M_LINK_FLG mlf 
         on mlf.DATA_COLLECTION_SEQ = mdc.DATA_COLLECTION_SEQ 
+    left outer join M_COLLECTION_TYPE mct
+        on mct.EDGE_TYPE = mdc.EDGE_TYPE
+        and mct.COLLECTION_TYPE = mdc.COLLECTION_TYPE
 where
     me.DELETE_FLG = 0 
     and not exists ( 

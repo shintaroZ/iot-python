@@ -21,7 +21,7 @@ class mqCommon:
     
     # エクスチェンジ名
     EXCHANGES_UP_NAME = "fuuryokuhatsuden.to_web"
-    EXCHANGES_DW_NAME = "fuuryokuhatsuden.to_tenant.%d"
+    EXCHANGES_DW_NAME = "fuuryokuhatsuden.to_tenant.%s"
     
     # ルーティングキー / キュー名
     ROUTING_QUEUE = []

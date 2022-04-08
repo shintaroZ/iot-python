@@ -1,23 +1,22 @@
 import json
 import configparser
-import pika
 import initCommon # カスタムレイヤー
 import rdsCommon # カスタムレイヤー
+import mqCommon # カスタムレイヤー
 import ssl
+import re # 正規表現
 
 # global
 LOGGER = None
 LOG_LEVEL = "INFO"
-DB_HOST = "localhost"
-DB_PORT = 3306
-DB_USER = "hoge"
-DB_PASSWORD = "hoge"
-DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
 MQ_HOST = "localhost"
 MQ_PORT = 3306
 MQ_USER = "hoge"
 MQ_PASSWORD = "hoge"
+
+# 正規表現
+PARAM_FILENAME = "GaussianMixture_ID[0-9]{2}.pkl|threshold_ID[0-9]{2}.json"
 
 # setter
 def setLogger(logger):
@@ -26,24 +25,6 @@ def setLogger(logger):
 def setLogLevel(loglevel):
     global LOG_LEVEL
     LOG_LEVEL = loglevel
-def setDbHost(dbHost):
-    global DB_HOST
-    DB_HOST = dbHost
-def setDbPort(dbPort):
-    global DB_PORT
-    DB_PORT = int(dbPort)
-def setDbUser(dbUser):
-    global DB_USER
-    DB_USER = dbUser
-def setDbPassword(dbPassword):
-    global DB_PASSWORD
-    DB_PASSWORD = dbPassword
-def setDbName(dbName):
-    global DB_NAME
-    DB_NAME = dbName
-def setDbConnectTimeout(dbConnectTimeout):
-    global DB_CONNECT_TIMEOUT
-    DB_CONNECT_TIMEOUT = int(dbConnectTimeout)
 def setMqHost(mqHost):
     global MQ_HOST
     MQ_HOST = mqHost
@@ -58,30 +39,61 @@ def setMqPassword(mqPassword):
     MQ_PASSWORD = mqPassword
     
 # --------------------------------------------------
-# MQマスタ取得用のパラメータ生成
+# 起動パラメータチェック
 # --------------------------------------------------
-def createMasterMqParam(dataType, tenantId):
-    param = {}
-    param["p_dataType"] = dataType
-    param["p_tenantId"] = tenantId
-    return param
+def isArgument(event):
+
+    try:
+        # TODO idTokenは後で復活
+        # # トークン取得
+        # token = event["idToken"]
+        #
+        # # グループ名
+        # try:
+        #     groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+        #
+        #     # 顧客名がグループ名に含まれること
+        #     if (event["clientName"] not in groupList):
+        #         raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+
+        for sendMsg in event["sendMessages"]:
+            
+            print (getSendMessageBody(sendMsg))
+            msgBody = sendMsg["messageBody"]
+            fileNameArray = []
+            fileNameArrayReg = []
+            
+            # パラメータファイル入替の場合、起動パラメータをチェック
+            if sendMsg["routingKey"] == "Replace_Edge_Setting" and  msgBody.get("records") is not None:
+                for record in msgBody["records"]:
+                    # 正規表現の完全一致
+                    if re.fullmatch(PARAM_FILENAME, record["fileName"]) is None:
+                        raise Exception("リクエスト内容に誤りがあります。パラメータファイル名が不正です。fileName:%s" % record["fileName"])
+                    
+                    # 数値部分を除いたファイル名を保持
+                    fileNameArray.append(record["fileName"])
+                    fileNameArrayReg.append(re.sub(r'[0-9]', "", record["fileName"]))
+                
+                if len(fileNameArray) != len(set(fileNameArrayReg)):
+                    raise Exception("リクエスト内容に誤りがあります。同じ種類のパラメータファイルは指定出来ません。%s" % fileNameArray)
+                    
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
-def initConfig(filePath):
+def initConfig(clientName):
     try:
-        config_ini = configparser.ConfigParser()
-        config_ini.read(filePath, encoding='utf-8')
+        # 設定ファイル読み込み
+        result = initCommon.getS3Object(clientName, "config.ini")
 
-        setLogLevel(config_ini['logger setting']['loglevel'])
-        setDbHost(config_ini['rds setting']['host'])
-        setDbPort(config_ini['rds setting']['port'])
-        setDbUser(config_ini['rds setting']['user'])
-        setDbPassword(config_ini['rds setting']['password'])
-        setDbName(config_ini['rds setting']['db'])
-        setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
-        
-        setMqHost(config_ini['mq setting']['host'])
+        # ConfigParserへパース
+        config_ini = configparser.ConfigParser()
+        config_ini.read_string(result)
+
+        # setMqHost(config_ini['mq setting']['host'])
+        setMqHost(config_ini['mq setting']['host_NLB'])
         setMqPort(config_ini['mq setting']['port'])
         setMqUser(config_ini['mq setting']['user'])
         setMqPassword(config_ini['mq setting']['password'])
@@ -89,86 +101,51 @@ def initConfig(filePath):
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
+    
+# --------------------------------------------------
+# 起動パラメータからメッセージボディ部を取得
+# 空の場合は空のJson形式の文字列を返却
+# --------------------------------------------------
+def getSendMessageBody(sendMsg):
+    resultStr = ""
+    resultArray = []
+    if sendMsg["messageBody"].get("records") is not None:
+        for record in sendMsg["messageBody"]["records"]:
+            resultArray.append(record)
+        resultStr = str(resultArray)
+    else:
+        resultStr = "{}"
+        
+    return resultStr
+    
 #####################
 # main
 #####################
 def lambda_handler(event, context):
     
     # 初期処理
-    initConfig(event["setting"])
+    initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
     LOGGER.info("MQ送信機能開始")
     
-    # パラメータから設備IDのリスト取得
-    tenantList = set([record.get('tenantId') for record in event["records"]])
+    # 起動パラメータチェック
+    isArgument(event)
     
-    # パラメータからRoutingKey取得
-    routingKey = event["routingKey"] if ("routingKey" in event) else ""
-    LOGGER.info("param(tenantList : %s, routingKey : %s)" % (tenantList, routingKey))
-        
-    # MQ接続先URL作成
-    connectUrl = "amqps://%s:%s@%s:%d" % (MQ_USER, MQ_PASSWORD, MQ_HOST, MQ_PORT)
-    LOGGER.debug(connectUrl)
-    connect_param = pika.URLParameters(connectUrl)
+    # MQコネクション生成
+    mqConnection = mqCommon.mqCommon(LOGGER, MQ_HOST, MQ_PORT, MQ_USER, MQ_PASSWORD)
     
-    # SSL Context for TLS configuration of Amazon MQ for RabbitMQ
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-    ssl_context.set_ciphers('ECDHE+AESGCM:!ECDSA')
-    connect_param.ssl_options = pika.SSLOptions(context=ssl_context)
-
-
-    # MQコネクション作成
+    # MQへPublish
     try:
-        LOGGER.info("---- MQ connection start")
-        mqConnection = pika.BlockingConnection(connect_param)
-        LOGGER.info("---- MQ connection successfull")
-    except Exception as e:
-        LOGGER.error("---- MQ connection failed")
-        raise(e)
-    
-    # チャンネル生成
-    channel = mqConnection.channel()
-    LOGGER.info("---- channel create")
-    
-    # RDSコネクション作成
-    rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
-    LOGGER.info("---- rds connect")
-    
-    # 設備分ループ
-    for t in tenantList:
-        
-        # MQマスタからExchangeNameとExchangeTypeを取得
-        param = {}
-        param["p_dataType"] = 2
-        param["p_regexpTenantId"] ="_" + t + "$"
-        query = initCommon.getQuery("sql/m_mq/findAll.sql")
-        mqmRecords = rds.fetchone(query, param)
-        if mqmRecords is None:
-            LOGGER.error("MQマスタに登録されていません。設備ID : %s" % t)
-            continue
+        for sendMsg in event["sendMessages"]:
+            exchangeName = mqConnection.getExchangesDwName() % sendMsg["deviceId"]
+            routingKey = sendMsg["routingKey"]
+            bodyMessage = getSendMessageBody(sendMsg)
             
-        # Exchange名は設備単位
-        exchangeName = mqmRecords["exchangeName"]
-        LOGGER.info("---- exchangeName : %s" % exchangeName)
-        
-        
-        # ExchangeTypeの生成
-        channel.exchange_declare(exchange=exchangeName,
-                                 exchange_type=mqmRecords["exchangeType"],
-                                 durable=True)
-                            
-        # メッセージ送信
-        LOGGER.info("publish start : %s : %s" %(exchangeName, routingKey))
-        channel.basic_publish(exchange=exchangeName,
-                             routing_key=routingKey,
-                             body="{}",
-                             properties=pika.BasicProperties(
-                                 delivery_mode = 2, 
-                                 headers={"content_type": "application/json"}
-                                ))
-        LOGGER.info("publish end")
+            LOGGER.info("Publish to exchangeName[%s] routingKey[%s] bodyMessage[%s]" % (exchangeName, routingKey, bodyMessage))
+            mqConnection.publishExchange(exchangeName, routingKey, bodyMessage)
 
-    # クローズ      
-    channel.close()
-    mqConnection.close()
-    del rds
+    except Exception as ex:
+        raise Exception("Publish Error. [%s]" %  ex)
+    
+    # クローズ
+    del mqConnection

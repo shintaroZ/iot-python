@@ -120,8 +120,9 @@ def isArgument(event):
 # --------------------------------------------------
 def convertResult(result):
 
-    # Dict→str形式に変換して返却
-    return json.dumps(result, ensure_ascii=False, default=initCommon.json_serial)
+    reResult = {"records" : result}
+    LOGGER.info(reResult)
+    return json.dumps(reResult, ensure_ascii=False, default=initCommon.json_serial)
 
 
 #####################

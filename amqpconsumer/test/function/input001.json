@@ -1,17 +1,3 @@
 {
-  "setting": "config/setting_dev.ini",
-  "dataType": 1,
-  "routingKey": "Clean_Error_Marking",
-  "recordsCount": 1,
-  "records": [
-    {
-      "tenantId": "1",
-      "status": 1,
-      "filename": "20210421150826.mp3",
-      "timestamp": 1618985311220,
-      "chunk_no": 0,
-      "chunk_total": 1,
-      "data": "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAR6AAK+WAACBQgKDRATFBcaHB8i"
-    }
-  ]
+  "clientName": "eg-iot-develop"
 }
