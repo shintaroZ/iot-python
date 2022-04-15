@@ -33,8 +33,8 @@ def getSysDateJst():
 # ファイル読み込み
 # query_file_path(str)  : ファイルパス
 # --------------------------------------------------
-def getQuery(query_file_path):
-    with open(query_file_path, 'r', encoding='utf-8') as f:
+def getQuery(query_file_path, enc='utf-8'):
+    with open(query_file_path, 'r', encoding=enc) as f:
         query = f.read()
     return query
 # --------------------------------------------------

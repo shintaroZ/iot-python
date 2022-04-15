@@ -1,7 +1,7 @@
 {
 	"clientName": "eg-iot-develop",
 	"deviceId": "3",
-	"sensorId": "3",
+	"sensorId": "",
 	"bodyRequest": {
 		"edgeType": 2,
 		"equipmentId": "M0001",

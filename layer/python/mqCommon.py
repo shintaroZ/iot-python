@@ -7,6 +7,7 @@ import pika
 import ssl
 from enum import IntEnum
 import json
+from pickletools import UP_TO_NEWLINE
 
 
 # -------------------------
@@ -23,13 +24,13 @@ class mqCommon:
     EXCHANGES_UP_NAME = "fuuryokuhatsuden.to_web"
     EXCHANGES_DW_NAME = "fuuryokuhatsuden.to_tenant.%s"
     
-    # ルーティングキー / キュー名
-    ROUTING_QUEUE = []
-    ROUTING_QUEUE.append({"Last_Score": "Last_Score"})
-    ROUTING_QUEUE.append({"New_Error": "New_Error"})
-    ROUTING_QUEUE.append({"Restart_Edge": "Restart_Edge"})
-    ROUTING_QUEUE.append({"Restart_Edge_Failed": "Restart_Edge_Failed"})
-    ROUTING_QUEUE.append({"Transfer_Current_Sound": "Transfer_Current_Sound"})
+    # 上り要求のキュー名
+    UP_QUEUE_ARRAY = []
+    UP_QUEUE_ARRAY.append("Last_Score")  # スコアデータ
+    UP_QUEUE_ARRAY.append("New_Error")  # 異常音
+    UP_QUEUE_ARRAY.append("Restart_AI")  # エッジ再起動
+    UP_QUEUE_ARRAY.append("Restart_Edge_Failed")  # エッジ再起動失敗
+    UP_QUEUE_ARRAY.append("Transfer_Current_Sound")  # 現在音
 
     # TENANT_ID
     TENANT_ID = "tenantId"
@@ -49,8 +50,11 @@ class mqCommon:
     def getExchangesDwName(self):
         return self.EXCHANGES_DW_NAME
 
+    def getUpQueueArray(self):
+        return self.UP_QUEUE_ARRAY
+
     # --------------------------------------------------
-    # コンストラクタ パラメータを元にRDS接続を行う
+    # コンストラクタ パラメータを元にMQ接続を行う
     # --------------------------------------------------
     # logger(logger)      : ロガー
     # host(str)           : 接続先エンドポイント
@@ -58,10 +62,8 @@ class mqCommon:
     # user(str)           : ユーザ
     # password(str)       : パスワード
     # --------------------------------------------------
-    def __init__(self, logger=None, host="localhost", port=5671, user="hoge", password="hoge" ):
-        # global LOGGER, MQ_CONNECT, CHANNEL
+    def __init__(self, logger=None, host="localhost", port=5671, user="hoge", password="hoge"):
         self.LOGGER = logger
-        # self.MQ_CONNECT = None
 
         try:
             # SSL Context for TLS configuration of Amazon MQ for RabbitMQ
@@ -70,18 +72,21 @@ class mqCommon:
             
             # AmazonMQ接続先URL作成（amqps://{ユーザ}:{パスワード}@{接続先エンドポイント}:{ポート番号}）
             connectUrl = "amqps://%s:%s@%s:%d" % (user, password, host, port)
-            self.LOGGER.debug(connectUrl)
-            connect_param = pika.URLParameters(connectUrl)
+            self.LOGGER.info(connectUrl)
+            # connect_param = pika.URLParameters(url=connectUrl)
+            credentials = pika.PlainCredentials(user, password)
+            connect_param = pika.ConnectionParameters(host=host
+                                                      , port=port
+                                                      , credentials=credentials
+                                                      , frame_max=131072
+                                                      , heartbeat=0)
             connect_param.ssl_options = pika.SSLOptions(context=ssl_context)
-            # connect_param = pika.ConnectionParameters(connectUrl, connection_attempts=5)
             
             # AmazonMQコネクション作成
             self.LOGGER.info("---- MQ Connection Start")
             self.MQ_CONNECT = pika.BlockingConnection(connect_param)
             self.LOGGER.info("---- MQ Connection Successfull")
             
-            # チャンネル作成
-            self.CHANNEL = self.MQ_CONNECT.channel()
         except Exception  as e:
             self.LOGGER.error("---- MQ Connection Failed")
             raise(e)
@@ -94,17 +99,42 @@ class mqCommon:
             self.MQ_CONNECT.close()
 
     # --------------------------------------------------
-    # キューからメッセージを取得
+    # キューのメッセージ数を取得
+    # queueName(str)  : キュー名
+    # --------------------------------------------------
+    def getQueueCount(self, queueName):
+        
+        # チャンネル作成
+        self.CHANNEL = self.MQ_CONNECT.channel()
+        
+        # キュー毎のメッセージの件数出力
+        queueCount = self.CHANNEL.queue_declare(queue=queueName,
+                                            durable=True,
+                                            exclusive=False,
+                                            auto_delete=False).method.message_count
+        self.LOGGER.info("%s count : %d" % (queueName, queueCount))
+        
+        # クローズ
+        self.CHANNEL.close()
+        return queueCount
+
+    # --------------------------------------------------
+    # キューからメッセージを取得し、配列で返却
     # queueName(str)  : キュー名
     # idArray(array)  : 取得対象のTENANT_IDを配列で指定
+    # isErrDel(bool)  : 不正メッセージの扱い(false:スキップ、true:削除)
     # --------------------------------------------------
-    def getQueueMessage(self, queueName, idArray = None):
+    def getQueueMessage(self, queueName, isErrDel=False, idArray=None):
         records = []
+        
+        # チャンネル作成
+        self.CHANNEL = self.MQ_CONNECT.channel()
         
         # キューからメッセージ取得
         for method_frame, properties, body in self.CHANNEL.consume(queue=queueName, inactivity_timeout=0.5):
     
             isAck = False
+            isErr = False
             # inactivity_timeout(秒)を超えるとNone返却するので終了
             if method_frame is None:
                 break
@@ -117,16 +147,27 @@ class mqCommon:
                     isAck = self.__isQueueContains(jsonDict, idArray)
 
                 except json.JSONDecodeError as ex:
-                    # Json形式でない場合はスキップ
-                    self.LOGGER.warn("フォーマット不正の為、スキップします。:%s" % body)
+                    # Json形式でない場合
+                    isErr = True
+                    self.LOGGER.warn("フォーマット不正 : %s" % body)
                     jsonDict = body
-                
+                except Exception as ex2:
+                    isErr = True
+                    self.LOGGER.warn(ex2)
+                    
                 if isAck:
                     records.append(jsonDict)
                     # ACKを返すことでキュー消化
                     self.CHANNEL.basic_ack(delivery_tag=method_frame.delivery_tag)
+                
+                # エラー時の扱い
+                if isErr and isErrDel:
+                    self.CHANNEL.basic_ack(delivery_tag=method_frame.delivery_tag)
         
         self.LOGGER.info("%s result : %s" % (queueName, records))
+        
+        # クローズ
+        self.CHANNEL.close()
         return records
     
     # --------------------------------------------------
@@ -137,6 +178,9 @@ class mqCommon:
     # exchangeType(str)  : エクスチェンジタイプ
     # --------------------------------------------------
     def publishExchange(self, exchangeName, routingKey, bodyMessage="{}", exchangeType="topic"):
+        
+        # チャンネル作成
+        self.CHANNEL = self.MQ_CONNECT.channel()
         
         # ExchangeTypeの生成
         self.CHANNEL.exchange_declare(exchange=exchangeName,
@@ -152,18 +196,22 @@ class mqCommon:
                                  headers={"content_type": "application/json"}
                                 ))
         
+        # クローズ
+        self.CHANNEL.close()
     
     # キュー内のTENANT_IDに顧客対象のIDが含まれるかを判定
     def __isQueueContains(self, jsonDict, idArray):
         isResult = False
         try:
             if idArray is None:
-                isResult=  True
+                isResult = True
             elif(jsonDict[self.TENANT_ID] in idArray):
                 isResult = True
         except KeyError  as e:
             # TENANT_IDが存在しない
-            self.LOGGER.warn("TENANT_IDが存在しないため、スキップします。:%s" % jsonDict)
+            raise Exception("TENANT_IDが存在しません。:%s" % jsonDict)
         
         return isResult
+
+
 0

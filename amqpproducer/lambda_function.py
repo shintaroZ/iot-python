@@ -93,7 +93,7 @@ def initConfig(clientName):
         config_ini.read_string(result)
 
         # setMqHost(config_ini['mq setting']['host'])
-        setMqHost(config_ini['mq setting']['host_NLB'])
+        setMqHost(config_ini['mq setting']['host'])
         setMqPort(config_ini['mq setting']['port'])
         setMqUser(config_ini['mq setting']['user'])
         setMqPassword(config_ini['mq setting']['password'])
