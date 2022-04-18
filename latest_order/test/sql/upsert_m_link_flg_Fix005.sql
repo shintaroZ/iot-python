@@ -1,3 +1,4 @@
+/* 蓄積あり、閾値判定あり */
 insert
 into `M_LINK_FLG` (
     `DATA_COLLECTION_SEQ`

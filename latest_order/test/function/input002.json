@@ -2,21 +2,21 @@
 	"clientName": "eg-iot-developxxxxx",
 	"receivedMessages": [
 		{
-			"deviceId": "700400015-66DEF1DE",
+			"deviceId": "UT_DEVICE001",
 			"requestTimeStamp": "2021-02-16 12:56:38.895",
 			"records": [
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-02-16 12:56:38.895",
 					"value": 1231
 				},
 				{
-					"sensorId": "s002",
+					"sensorId": "UT_SEN002",
 					"timeStamp": "2021-02-16 12:56:38.895",
 					"value": 2356
 				},
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-02-16 12:57:38.895",
 					"value": 4321
 				}

@@ -1,1 +1,1 @@
-delete from `M_DATA_COLLECTION` where DATA_COLLECTION_SEQ between 0 and 4;
+delete from `M_DATA_COLLECTION` where DEVICE_ID like 'UT_DEVICE%%' and SENSOR_ID like 'UT_SEN%%';

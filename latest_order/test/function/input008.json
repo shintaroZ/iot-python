@@ -1,0 +1,15 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"deviceId": "101",
+			"requestTimeStamp": "2022/04/15 10:00:00",
+			"records": [
+				{
+					"tenantId": "101",
+					"score": null
+				}
+			]
+		}
+	]
+}

@@ -1,4 +1,4 @@
-/* 蓄積なし、閾値判定あり */
+/* 蓄積あり、閾値判定あり */
 insert
 into `M_LINK_FLG` (
     `DATA_COLLECTION_SEQ`
@@ -7,8 +7,8 @@ into `M_LINK_FLG` (
     , `CREATED_AT`
 )
 values (
-    2
-    , '0'
+    101
+    , '1'
     , '1'
     , '2021/07/28 16:30:31'
 )

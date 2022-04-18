@@ -25,6 +25,25 @@ class LimitCheckEnum(IntEnum):
     Valid = 1
 
 
+# エッジ区分要素
+class EdgeTypeEnum(IntEnum):
+    DeviceGateway = 1
+    Monone = 2
+
+
+# スコアデータ要素
+class ScoreEnum(IntEnum):
+    Date = 0
+    Time = 1
+    Flag = 2
+    Min = 3
+    Max = 4
+    Value = 5
+    Threshold = 6
+    SlidingUpper = 7
+    SlidingLower = 8
+
+    
 # global
 LOGGER = None
 CONNECT = None
@@ -37,6 +56,19 @@ DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
+
+# パラメータ用定数
+CLIENT_NAME = "clientName"
+RECEVERY_FLG = "receveryFlg"
+RECEIVED_MESSAGES = "receivedMessages"
+DEVICE_ID = "deviceId"
+REQUEST_TIMESTAMP = "requestTimeStamp"
+RECORDS = "records"
+SENSOR_ID = "sensorId"
+TIMESTAMP = "timeStamp"
+VALUE = "value"
+TENANT_ID = "tenantId"
+SCORE = "score"
 
 
 # setter
@@ -79,6 +111,7 @@ def setDbConnectTimeout(dbConnectTimeout):
     global DB_CONNECT_TIMEOUT
     DB_CONNECT_TIMEOUT = int(dbConnectTimeout)
 
+
 def setRetryMaxCount(retryMaxCount):
     global RETRY_MAX_COUNT
     RETRY_MAX_COUNT = int(retryMaxCount)
@@ -119,10 +152,12 @@ def initConfig(clientName):
 # データ定義マスタの取得
 # --------------------------------------------------
 def getMasterDataCollection(rds, paramDeviceId, paramSensorId):
-    params = {
-        "p_deviceId": paramDeviceId
-        , "p_sensorId": paramSensorId
-    }
+    paramArray = []
+    paramArray.append("mdc.DEVICE_ID = '%s'" % paramDeviceId)
+    if not paramSensorId is None:
+        paramArray.append("mdc.SENSOR_ID = '%s'" % paramSensorId)
+    
+    params = { "whereParam" : " and ".join(paramArray)}
     query = initCommon.getQuery("sql/m_data_collection/findbyId.sql")
     try:
         result = rds.fetchone(query, params)
@@ -139,12 +174,12 @@ def getMasterDataCollection(rds, paramDeviceId, paramSensorId):
 
 
 # --------------------------------------------------
-# 公開DBの取得
+# 登録先テーブルの件数取得
 # --------------------------------------------------
-def getPublicTable(rds, p_dataCollectionSeq, p_receivedDateTime):
+def getRegTableCount(rds, even):
     params = {
-        "p_dataCollectionSeq": p_dataCollectionSeq
-        , "p_receivedDateTime": p_receivedDateTime
+        "dataCollectionSeq": dataCollectionSeq
+        , "receivedDateTime": receivedDateTime
     }
     query = initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
     result = rds.fetchone(query, params)
@@ -153,13 +188,113 @@ def getPublicTable(rds, p_dataCollectionSeq, p_receivedDateTime):
 
 
 # --------------------------------------------------
-# 公開DB登録用のValuesパラメータ作成
+# records配下のパラメータチェックし、辞書型で返却
 # --------------------------------------------------
-def createPublicTableValues(p_dataCollectionSeq, p_receivedDateTime, p_sensorValue, p_createdDateTime):
-    return "(%d, '%s', %f, '%s')" % (p_dataCollectionSeq,
-                                     p_receivedDateTime,
-                                     p_sensorValue,
-                                     p_createdDateTime)
+def isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict):
+    
+    resultMap = {}
+    resultMap["isErr"] = False
+    resultMap["errorMessage"] = ""
+    resultMap["cnvTimeStamp"] = ""
+    resultMap["cnvValue"] = ""
+    
+    try:
+        # timeStampが指定ありの場合のみチェック
+        if not record.get(TIMESTAMP) is None:
+            if initCommon.validateTimeStamp(record.get(TIMESTAMP)):
+                resultMap["cnvTimeStamp"] = datetime.datetime.strptime(record[TIMESTAMP], '%Y-%m-%d %H:%M:%S.%f')
+                resultMap["cnvTimeStamp"] = resultMap["cnvTimeStamp"] + datetime.timedelta(seconds=32400)
+            else:
+                resultMap["errorMessage"] = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % \
+                                                                                    (
+                                                                                        deviceId
+                                                                                        , requestTimeStamp
+                                                                                        , record.get(SENSOR_ID)
+                                                                                        , record.get(TIMESTAMP)) 
+                raise Exception(resultMap["errorMessage"])
+
+        # valueが指定ありの場合のみチェック
+        if not record.get(VALUE) is None:
+            # 収集データ区分=0（数値）の場合、起動パラメータ.レコード一覧.値が数値であること。
+            if (dataCollectionResultDict["collectionValueType"] == CollectionValueTypeEnum.Number) and (initCommon.isValidateNumber(record.get(VALUE))):
+                resultMap["cnvValue"] = round((float(record.get(VALUE)) * dataCollectionResultDict["revisionMagification"]), 2)
+
+            # 収集データ区分=1（Boolean）の場合、起動パラメータ.レコード一覧.値がBoolean型であること。    
+            elif (dataCollectionResultDict["collectionValueType"] == CollectionValueTypeEnum.Boolean) and initCommon.isValidateBoolean(record.get(VALUE)):
+                # 型判定
+                if (isinstance(record.get(VALUE), str) and record.get(VALUE).upper() == "FALSE") \
+                   or (isinstance(record.get(VALUE), bool) and value == False):
+                    resultMap["cnvValue"] = 1
+                else:
+                    resultMap["cnvValue"] = 0
+            else:
+                resultMap["errorMessage"] = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサID:%s 値:%s)" % \
+                                                                    (
+                                                                        deviceId
+                                                                        , requestTimeStamp
+                                                                        , record.get(SENSOR_ID)
+                                                                        , record.get(VALUE)) 
+                raise Exception(resultMap["errorMessage"])
+                
+        # エッジ区分＝2（Monone）の場合のみチェック
+        if dataCollectionResultDict["edgeType"] == EdgeTypeEnum.Monone:
+            
+            # 存在チェック
+            if record.get(TENANT_ID) is None:
+                resultMap["errorMessage"] = "TENANT_IDが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
+                raise Exception(resultMap["errorMessage"])
+            if record.get(SCORE) is None:
+                resultMap["errorMessage"] = "スコアデータが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
+                raise Exception(resultMap["errorMessage"])
+            
+            # スペース区切りで分割し、要素数が9個であること。
+            scoreArray = record.get(SCORE).replace("\n", "").split(" ")
+            if not len(scoreArray) == 9:
+                resultMap["errorMessage"] = "スコアデータのフォーマットが不正です。(デバイスID:%s 送信日時:%s スコアデータ:%s)" % \
+                                                                                    (
+                                                                                        deviceId
+                                                                                        , requestTimeStamp
+                                                                                        , record.get(SCORE)) 
+                raise Exception(resultMap["errorMessage"])
+            
+            # 第１要素と第２要素を結合
+            strDateTime = "%s %s" % (scoreArray[ScoreEnum.Date], scoreArray[ScoreEnum.Time])
+            resultMap["cnvTimeStamp"] = datetime.datetime.strptime(strDateTime, "%Y/%m/%d %H:%M:%S")
+                
+    except Exception as ex:
+        resultMap["isErr"] = True
+        LOGGER.warn("isArgmentRecord Error : %s" , ex)
+    return resultMap
+
+    
+# --------------------------------------------------
+# 時系列テーブル登録用のValuesパラメータ作成
+# --------------------------------------------------
+def createPublicTableValues(dataCollectionSeq, receivedDateTime, sensorValue, createdDateTime):
+    return "(%d, '%s', %f, '%s')" % (dataCollectionSeq
+                                     , receivedDateTime
+                                     , sensorValue
+                                     , createdDateTime)
+
+
+# --------------------------------------------------
+# スコアデータテーブル登録用のValuesパラメータ作成
+# --------------------------------------------------
+def createScoreTableValues(dataCollectionSeq, cnvTimeStamp, score, createdDateTime):
+    
+    scoreArray = score.replace("\n", "").split(" ")
+    return "(%d, '%s', '%s', '%s', '%s', %f, %f, %f, %f, %f, %f, '%s')" % (dataCollectionSeq
+                                     , cnvTimeStamp
+                                     , scoreArray[ScoreEnum.Date]
+                                     , scoreArray[ScoreEnum.Time]
+                                     , scoreArray[ScoreEnum.Flag]
+                                     , float(scoreArray[ScoreEnum.Min])
+                                     , float(scoreArray[ScoreEnum.Max])
+                                     , float(scoreArray[ScoreEnum.Value])
+                                     , float(scoreArray[ScoreEnum.Threshold])
+                                     , float(scoreArray[ScoreEnum.SlidingUpper])
+                                     , float(scoreArray[ScoreEnum.SlidingLower])
+                                     , createdDateTime)
 
 
 # --------------------------------------------------
@@ -184,66 +319,13 @@ def createSurveillanceValues(paramOccurredDatetime, paramFunctionName, paramMess
                                          registerDateTime)
 
 
-# --------------------------------------------------
-# 日付妥当性チェック(true:正常、false:異常）
-# --------------------------------------------------
-def validateTimeStamp(strTimeStamp):
-
-    result = False
-    try:
-        # 文字列⇒日付変換で妥当性チェック
-        datetime.datetime.strptime(strTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
-        result = True
-    except ValueError:
-        LOGGER.error('validate error (%s)' % strTimeStamp)
-
-    return result
-
-
-# --------------------------------------------------
-# 浮動小数点数値チェック(true:正常、false:異常）
-# --------------------------------------------------
-def validateNumber(value):
-
-    result = False
-    try:
-        # float型へのキャストで妥当性チェック
-        float(value)
-        result = True
-    except ValueError:
-        LOGGER.error('validate error (%s)' % value)
-
-    return result
-
-
-# --------------------------------------------------
-# Boolean型チェック(true:正常、false:異常）
-# --------------------------------------------------
-def validateBoolean(value):
-
-    result = False
-    try:
-        # 型判定
-        if isinstance(value, str):
-            boolStrList = ["TRUE", "FALSE"]
-            if value.upper() in boolStrList:
-                result = True
-        elif isinstance(value, bool):
-            result = True
-
-    except ValueError:
-        LOGGER.error('validate error (%s)' % value)
-
-    return result
-
-
 #####################
 # main
 #####################
 def lambda_handler(event, context):
 
     # 初期処理
-    initConfig(event["clientName"])
+    initConfig(event[CLIENT_NAME])
     setLogger(initCommon.getLogger(LOG_LEVEL))
     # setLogger(initCommon.getLogger("DEBUG"))
 
@@ -253,115 +335,157 @@ def lambda_handler(event, context):
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
 
     # リカバリ判定
-    isRecevery = True if ("receveryFlg" in event and event["receveryFlg"] == 1) else False
+    isRecevery = True if (RECEVERY_FLG in event and event[RECEVERY_FLG] == 1) else False
 
     reReceivedMessages = []
     reRecords = []
-    for e in event["receivedMessages"]:
+    for e in event[RECEIVED_MESSAGES]:
 
         # 親要素の取得
-        deviceId = e['deviceId']
-        requestTimeStamp = e['requestTimeStamp']
+        deviceId = e[DEVICE_ID]
+        requestTimeStamp = e[REQUEST_TIMESTAMP]
 
-        # センサIDで昇順ソート
-        sortedRecords = sorted(e['records'], key=lambda x:x['sensorId'])
+        # センサID もしくは TENANT_IDで昇順ソート
+        sortedRecords = e[RECORDS]
+        if not e.get(SENSOR_ID) is None:
+            sortedRecords = sorted(e[RECORDS], key=lambda x:x[SENSOR_ID])
+        if not e.get(TENANT_ID) is None:
+            sortedRecords = sorted(e[RECORDS], key=lambda x:x[TENANT_ID])
+        
         beforeSensorId = ""
 
         # BULK INSERT用配列
         publicTableValues = []
         surveillanceValues = []
+        scoreTableValues = []
 
         for record in sortedRecords:
             # 現在時刻取得
             nowDateTime = initCommon.getSysDateJst()
 
             # 各センサの要素取得
-            sensorId = record['sensorId']
-            timeStamp = record['timeStamp']
-            value = record['value']
+            sensorId = record.get(SENSOR_ID)
+            timeStamp = record.get(TIMESTAMP)
+            value = record.get(VALUE)
+            tenantId = record.get(TENANT_ID)
+            score = record.get(SCORE)
 
             # 初回 or センサが切り替わったタイミングでマスタ取得
-            if sensorId != beforeSensorId:
+            if sensorId != beforeSensorId or tenantId is not None:
                 # データ定義マスタの取得
-                res = getMasterDataCollection(rds, deviceId, sensorId)
-                dataCollectionSeq = int(res['dataCollectionSeq'])
-                collectionValueType = res['collectionValueType']
-                revisionMagification = 1 if (res['revisionMagification'] is None) else float(res['revisionMagification'])
-                savingFlg = int(res['savingFlg'])
-                limitCheckFlg = int(res['limitCheckFlg'])
+                dataCollectionResultDict = getMasterDataCollection(rds, deviceId, sensorId)
+                dataCollectionSeq = int(dataCollectionResultDict['dataCollectionSeq'])
+                collectionValueType = dataCollectionResultDict['collectionValueType']
+                revisionMagification = 1 if (dataCollectionResultDict['revisionMagification'] is None) else float(dataCollectionResultDict['revisionMagification'])
+                savingFlg = int(dataCollectionResultDict['savingFlg'])
+                limitCheckFlg = int(dataCollectionResultDict['limitCheckFlg'])
+                LOGGER.info("データ定義マスタ取得:%s" % dataCollectionResultDict)
                         
             # リカバリ時のみセンサが切り替わったタイミングで中間コミット
             if isRecevery and beforeSensorId != "" and sensorId != beforeSensorId:
                 LOGGER.info("%sの処理完了のため、中間コミットします。" % beforeSensorId)
                 bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
                 bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
+                bulkInsert(rds, scoreTableValues, initCommon.getQuery("sql/t_score/insert.sql"))
                 rds.commit()
 
                 # 一時配列クリア
                 publicTableValues = []
                 surveillanceValues = []
+                scoreTableValues = []
 
             # 前回値退避
             beforeSensorId = sensorId
-
-            # 単位合わせ用に加工
-            cnvTimeStamp = None
-            cnvValue = None
-            if validateTimeStamp(timeStamp):
-                # レコード一覧.タイムスタンプはUTCなのでJSTへ変換
-                cnvTimeStamp = datetime.datetime.strptime(timeStamp, '%Y-%m-%d %H:%M:%S.%f')
-                cnvTimeStamp = cnvTimeStamp + datetime.timedelta(seconds=32400)
-
-            # 数値・Boolean判定
-            if ((collectionValueType == CollectionValueTypeEnum.Number) and validateNumber(value)):
-                cnvValue = round((float(value) * revisionMagification), 2)
-            elif ((collectionValueType == CollectionValueTypeEnum.Boolean) and validateBoolean(value)):
-                # 型判定
-                if (isinstance(value, str) and value.upper() == "FALSE") or (isinstance(value, bool) and value == False):
-                    cnvValue = 1
-                else:
-                    cnvValue = 0
-
-            # 閾値判定ありの要素のみ戻り値に含める
-            if limitCheckFlg == LimitCheckEnum.Valid:
-                reMap = {}
-                reMap["dataCollectionSeq"] = str(dataCollectionSeq)
-                reMap["receivedDatetime"] = cnvTimeStamp.strftime('%Y/%m/%d %H:%M:%S.%f')
-                reRecords.append(reMap)
             
+            # 起動パラメータチェック
+            isArgumentResultMap = isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict)
+            
+            # 公開DBのカウント
+            if dataCollectionResultDict['edgeType'] == EdgeTypeEnum.DeviceGateway:
+                resultPubDict = rds.fetchone(initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
+                                      , {
+                                            "dataCollectionSeq": dataCollectionSeq
+                                            , "receivedDateTime": isArgumentResultMap["cnvTimeStamp"]
+                                        })
+                if resultPubDict["count"] != 0:
+                    isArgumentResultMap["errorMessage"] = "センサの欠損を検知しました。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % \
+                                                                                        (
+                                                                                            deviceId
+                                                                                            , requestTimeStamp
+                                                                                            , record.get(SENSOR_ID)
+                                                                                            , record.get(TIMESTAMP)) 
+
+            elif dataCollectionResultDict['edgeType'] == EdgeTypeEnum.Monone:
+                resultPubDict = rds.fetchone(initCommon.getQuery("sql/t_score/findbyId.sql")
+                                      , {
+                                            "dataCollectionSeq": dataCollectionSeq
+                                            , "detectionDateTime": isArgumentResultMap["cnvTimeStamp"]
+                                        })
+                if resultPubDict["count"] != 0:
+                    isArgumentResultMap["errorMessage"] = "センサの欠損を検知しました。(TENANT_ID:%s 送信日時:%s)" % \
+                                                                                        (
+                                                                                            deviceId
+                                                                                            , requestTimeStamp) 
+            else:
+                LOGGER.warn("エッジ区分が不正です。[%d]" % dataCollectionResultDict['edgeType'])
+                continue
+            
+            # ---------------------------
+            # センサ登録/リカバリー判定
+            # ---------------------------            
             # 蓄積有無判定
             if savingFlg != SavingEnum.Valid:
                 LOGGER.info("蓄積対象外の為、スキップします。(%s / %s)" % (deviceId, sensorId))
                 continue
             
+            # リカバリー判定
             if isRecevery == True:
-                # LOGGER.info("リカバリ処理の為、公開DB取得をスキップして即時更新します。(%s / %s)" % (deviceId, sensorId))
-                publicTableValues.append(createPublicTableValues(dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
+                LOGGER.info("リカバリ処理の為、公開DB取得をスキップして即時更新します。(%s / %s)" % (deviceId, sensorId))
+                publicTableValues.append(createPublicTableValues(dataCollectionSeq, isArgumentResultMap["cnvTimeStamp"], isArgumentResultMap["cnvValue"], nowDateTime))
                 continue
             
-            # 公開DBの取得
-            resPub = getPublicTable(rds, dataCollectionSeq, cnvTimeStamp)
-
-            # センサ登録判定
-            errMsg = ""
-            if resPub["count"] != 0:
-                errMsg = "センサの欠損を検知しました。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorId, cnvTimeStamp)
-            elif cnvTimeStamp is None:
-                errMsg = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % (deviceId, requestTimeStamp, sensorId, cnvTimeStamp)
-            elif cnvValue is None:
-                errMsg = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサID:%s 値:%s)" % (deviceId, requestTimeStamp, sensorId, value)
-
-            if len(errMsg) == 0:
-                LOGGER.debug('★登録対象 (%d / %s / %f / %s)' % (dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
-                publicTableValues.append(createPublicTableValues(dataCollectionSeq, cnvTimeStamp, cnvValue, nowDateTime))
+            # 更新先テーブルを分岐
+            if isArgumentResultMap["errorMessage"] == "": 
+                if dataCollectionResultDict['edgeType'] == EdgeTypeEnum.DeviceGateway:
+                    # 更新先：時系列テーブル
+                    LOGGER.info("時系列テーブル更新[ %d / %s / %s ]" % (dataCollectionSeq
+                                                                     , isArgumentResultMap["cnvTimeStamp"]
+                                                                     , isArgumentResultMap["cnvValue"]))
+                    publicTableValues.append(createPublicTableValues(dataCollectionSeq
+                                                                     , isArgumentResultMap["cnvTimeStamp"]
+                                                                     , isArgumentResultMap["cnvValue"]
+                                                                     , nowDateTime))
+                    
+                elif dataCollectionResultDict['edgeType'] == EdgeTypeEnum.Monone:
+                    # 更新先：スコアテーブル
+                    LOGGER.info("スコアテーブル更新[ %d / %s / %s ]" % (dataCollectionSeq
+                                                                     , isArgumentResultMap["cnvTimeStamp"]
+                                                                     , record[SCORE]))
+                    scoreTableValues.append(createScoreTableValues(dataCollectionSeq
+                                                                   , isArgumentResultMap["cnvTimeStamp"]
+                                                                   , record[SCORE]
+                                                                   , nowDateTime))
+                
+                # 閾値判定ありの要素のみ戻り値に含める
+                if limitCheckFlg == LimitCheckEnum.Valid:
+                    reMap = {}
+                    reMap["dataCollectionSeq"] = str(dataCollectionSeq)
+                    reMap["receivedDatetime"] = isArgumentResultMap["cnvTimeStamp"].strftime('%Y/%m/%d %H:%M:%S.%f')
+                    reRecords.append(reMap)
             else:
-                LOGGER.warn(errMsg)
-                surveillanceValues.append(createSurveillanceValues(nowDateTime, "公開DB作成機能", errMsg, nowDateTime))
-
+                # 更新先：監視テーブル
+                LOGGER.info("監視テーブル更新[ %s / %s / %s ]" % (nowDateTime
+                                                                 , "公開DB作成機能"
+                                                                 , isArgumentResultMap["errorMessage"]))
+                surveillanceValues.append(createSurveillanceValues(nowDateTime
+                                                                   , "公開DB作成機能"
+                                                                   , isArgumentResultMap["errorMessage"]
+                                                                   , nowDateTime))
         
         # commit
         bulkInsert(rds, publicTableValues, initCommon.getQuery("sql/t_public_timeseries/insert.sql"))
         bulkInsert(rds, surveillanceValues, initCommon.getQuery("sql/t_surveillance/insert.sql"))
+        bulkInsert(rds, scoreTableValues, initCommon.getQuery("sql/t_score/insert.sql"))
         rds.commit()
 
     # close
@@ -370,6 +494,6 @@ def lambda_handler(event, context):
     # 戻り値整形
     reEventTable = {}
     if isRecevery == False:
-        reEventTable["clientName"] = event["clientName"]
-        reEventTable["records"] = reRecords
+        reEventTable[CLIENT_NAME] = event[CLIENT_NAME]
+        reEventTable[RECORDS] = reRecords
     return reEventTable

@@ -1,6 +1,8 @@
 insert
 into `M_DATA_COLLECTION`(
     `DATA_COLLECTION_SEQ`
+    , `EDGE_TYPE`
+    , `EQUIPMENT_ID`
     , `DEVICE_ID`
     , `SENSOR_ID`
     , `DELETE_FLG`
@@ -12,16 +14,16 @@ into `M_DATA_COLLECTION`(
     , `COLLECTION_VALUE_TYPE`
     , `COLLECTION_TYPE`
     , `REVISION_MAGNIFICATION`
-    , `X_COORDINATE`
-    , `Y_COORDINATE`
     , `CREATED_AT`
     , `UPDATED_AT`
     , `UPDATED_USER`
 )
 values (
     1
-    , '700400015-66DEF1DE'
-    , 's002'
+    , '1'
+    , 'UT_EQP001'
+    , 'UT_DEVICE001'
+    , 'UT_SEN002'
     , '0'
     , 0
     , '湿度testSensor'
@@ -31,8 +33,6 @@ values (
     , '0'
     , 2
     , 0.01
-    , 1234.56
-    , 2345.67
     , '2021/07/28 16:40:25'
     , null
     , 'devUser'

@@ -1,8 +1,8 @@
 select
     count(*) as count
 from
-    T_PUBLIC_TIMESERIES
+    T_SCORE
 where
     DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
-and RECEIVED_DATETIME = '%(receivedDateTime)s'
+and DETECTION_DATETIME = '%(detectionDateTime)s'
 ;

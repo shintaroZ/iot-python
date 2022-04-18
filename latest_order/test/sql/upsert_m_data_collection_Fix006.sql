@@ -19,20 +19,20 @@ into `M_DATA_COLLECTION`(
     , `UPDATED_USER`
 )
 values (
-    4
-    , '1'
+    101
+    , '2'
     , 'UT_EQP001'
-    , 'UT_DEVICE001'
-    , 'UT_SEN001'
-    , '0'
-    , 1
-    , '温度testSensor2'
-    , '℃'
-    , ''
+    , '101'
     , ''
     , '0'
+    , 0
+    , 'Mononeテストエッジ(xxx.xxx.xxx.xxx)'
+    , ''
+    , ''
+    , ''
+    , '0'
     , 1
-    , 0.01
+    , null
     , '2021/07/28 16:40:25'
     , null
     , 'devUser'

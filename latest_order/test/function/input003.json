@@ -3,42 +3,42 @@
 	"receveryFlg": 1,
 	"receivedMessages": [
 		{
-			"deviceId": "700400015-66DEF1DE",
+			"deviceId": "UT_DEVICE001",
 			"requestTimeStamp": "2021-07-05 12:00:00.000",
 			"records": [
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-07-05 03:00:00.000",
 					"value": 1234
 				},
 				{
-					"sensorId": "s002",
+					"sensorId": "UT_SEN002",
 					"timeStamp": "2021-07-05 03:00:00.000",
 					"value": 2345
 				},
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-07-05 03:10:00.000",
 					"value": 3456
 				}
 			]
 		},
 		{
-			"deviceId": "700400015-66DEF1DE",
+			"deviceId": "UT_DEVICE001",
 			"requestTimeStamp": "2021-07-05 12:30:00.000",
 			"records": [
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-07-05 03:30:00.000",
 					"value": 1111
 				},
 				{
-					"sensorId": "s002",
+					"sensorId": "UT_SEN002",
 					"timeStamp": "2021-07-05 03:30:00.000",
 					"value": 2222
 				},
 				{
-					"sensorId": "s001",
+					"sensorId": "UT_SEN001",
 					"timeStamp": "2021-07-05 03:40:00.000",
 					"value": 3333
 				}
