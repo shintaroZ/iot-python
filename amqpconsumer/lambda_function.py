@@ -150,7 +150,6 @@ def lambda_handler(event, context):
     # 上りキュー分繰り返し：キュー名はレイヤー内に保持
     for queueName in mqConnection.getUpQueueArray():
         
-        receivedMessagesDict = {}
         
         # キューの数をカウント
         queueCount = mqConnection.getQueueCount(queueName)
@@ -158,9 +157,12 @@ def lambda_handler(event, context):
         # キューがあるものだけ取得しにいく
         if 0 < queueCount:
             for tenantIdDict in tenantIdArray:
+                receivedMessagesDict = {}
             
                 # キューからtenantIdに該当するデータ取得
-                messageArray = mqConnection.getQueueMessage(queueName, [tenantIdDict["tenantId"]])
+                messageArray = mqConnection.getQueueMessage(queueName=queueName
+                                                            , isErrDel = True
+                                                            , idArray = [tenantIdDict["tenantId"]])
             
                 # 取得出来た場合のみ戻り値を整形
                 if 0 < len(messageArray):

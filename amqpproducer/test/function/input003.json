@@ -7,11 +7,11 @@
 			"messageBody": {
 				"records": [
 					{
-						"fileName": "GaussianMixture_ID02.pkl",
+						"fileName": "GaussianMixture_ID01.pkl",
 						"data": "hogehoge"
 					},
 					{
-						"fileName": "threshold_ID01.json",
+						"fileName": "Threshold_ID01.json",
 						"data": "sagesage"
 					}
 				]

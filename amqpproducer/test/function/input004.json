@@ -1,5 +1,5 @@
 {
-	"clientName": "eg-iot-develop",
+	"clientName": "eg-iot-develop2",
 	"sendMessages": [
 		{
 			"deviceId": "1",
@@ -7,11 +7,11 @@
 			"messageBody": {
 				"records": [
 					{
-						"fileName": "GaussianMixture_ID02.pkl",
+						"fileName": "GaussianMixture_ID01.pkl",
 						"data": "hogehoge"
 					},
 					{
-						"fileName": "threshold_ID01.json",
+						"fileName": "GaussianMixture_ID01.pkl",
 						"data": "sagesage"
 					}
 				]

@@ -43,42 +43,50 @@ def setMqPassword(mqPassword):
 # --------------------------------------------------
 def isArgument(event):
 
+    # グループ名
     try:
-        # TODO idTokenは後で復活
-        # # トークン取得
-        # token = event["idToken"]
-        #
-        # # グループ名
-        # try:
-        #     groupList = initCommon.getPayLoadKey(token, "cognito:groups")
-        #
-        #     # 顧客名がグループ名に含まれること
-        #     if (event["clientName"] not in groupList):
-        #         raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+        # トークン取得
+        token = event["idToken"]
 
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+     
+    # 引数がある場合はチェック
+    try:
         for sendMsg in event["sendMessages"]:
-            
-            print (getSendMessageBody(sendMsg))
             msgBody = sendMsg["messageBody"]
             fileNameArray = []
             fileNameArrayReg = []
+            idArray = []
             
             # パラメータファイル入替の場合、起動パラメータをチェック
             if sendMsg["routingKey"] == "Replace_Edge_Setting" and  msgBody.get("records") is not None:
                 for record in msgBody["records"]:
                     # 正規表現の完全一致
                     if re.fullmatch(PARAM_FILENAME, record["fileName"]) is None:
-                        raise Exception("リクエスト内容に誤りがあります。パラメータファイル名が不正です。fileName:%s" % record["fileName"])
+                        raise Exception("パラメータファイル名が不正です。fileName:%s" % record["fileName"])
                     
                     # 数値部分を除いたファイル名を保持
                     fileNameArray.append(record["fileName"])
                     fileNameArrayReg.append(re.sub(r'[0-9]', "", record["fileName"]))
+                    
+                    # 数値部分のみを保持
+                    idArray.append(re.sub(r'[^0-9]', '', record["fileName"]))
                 
                 if len(fileNameArray) != len(set(fileNameArrayReg)):
-                    raise Exception("リクエスト内容に誤りがあります。同じ種類のパラメータファイルは指定出来ません。%s" % fileNameArray)
+                    raise Exception("同じ種類のパラメータファイルは指定出来ません。%s" % fileNameArray)
+                
+                if len(idArray) == len(set(idArray)):
+                    raise Exception("異なるIDのパラメータファイルは指定出来ません。%s" % fileNameArray)
                     
     except Exception as ex:
-        raise Exception("Authentication Error. [%s]" %  ex)
+        raise Exception("Argument Error. [%s]" %  ex)
         
 # --------------------------------------------------
 # 設定ファイル読み込み
@@ -92,7 +100,6 @@ def initConfig(clientName):
         config_ini = configparser.ConfigParser()
         config_ini.read_string(result)
 
-        # setMqHost(config_ini['mq setting']['host'])
         setMqHost(config_ini['mq setting']['host'])
         setMqPort(config_ini['mq setting']['port'])
         setMqUser(config_ini['mq setting']['user'])
