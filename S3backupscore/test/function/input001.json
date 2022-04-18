@@ -1,0 +1,76 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"queue": "Last_Score",
+			"deviceId": "1",
+			"requestTimeStamp": "2022/04/19 08:15:59",
+			"recordsCount": 2,
+			"records": [
+				{
+					"tenantId": "1",
+					"score": "2022/04/01 23:59:59 0 -1254.7238532535666 -1254.7223811898668 -1254.7227376742087 1000 1000 -900\n"
+				},
+				{
+					"tenantId": "1",
+					"score": "2022/04/02 00:09:59 0 -1254.7238532535666 -1254.7223811898668 -1254.7227376742087 1000 1000 -900\n"
+				}
+			]
+		},
+		{
+			"queue": "Last_Score",
+			"deviceId": "2",
+			"requestTimeStamp": "2022/04/19 08:16:01",
+			"recordsCount": 1,
+			"records": [
+				{
+					"tenantId": "2",
+					"score": "2022/04/01 23:59:59 0 -1254.7238532535666 -1254.7223811898668 -1254.7227376742087 1000 1000 -900\n"
+				}
+			]
+		},
+		{
+			"queue": "New_Error",
+			"deviceId": "1",
+			"requestTimeStamp": "2022/04/19 08:16:03",
+			"recordsCount": 2,
+			"records": [
+				{
+					"tenantId": "1",
+					"status": 1,
+					"filename": "20210421150826.mp3",
+					"timestamp": 1618985311220,
+					"chunk_no": 0,
+					"chunk_total": 1,
+					"data": "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAR6AAK+WAACBQgKDRATFBcaHB8i"
+				},
+				{
+					"tenantId": "1",
+					"status": 1,
+					"filename": "20210421150827.mp3",
+					"timestamp": 1618985311227,
+					"chunk_no": 0,
+					"chunk_total": 1,
+					"data": "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAR6AAK+WAACBQgKDRATFBcaHB8i"
+				}
+			]
+		},
+		{
+			"queue": "New_Error",
+			"deviceId": "2",
+			"requestTimeStamp": "2022/04/19 08:16:04",
+			"recordsCount": 1,
+			"records": [
+				{
+					"tenantId": "2",
+					"status": 1,
+					"filename": "20210421150826.mp3",
+					"timestamp": 1618985311220,
+					"chunk_no": 0,
+					"chunk_total": 1,
+					"data": "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMQAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAR6AAK+WAACBQgKDRATFBcaHB8i"
+				}
+			]
+		}
+	]
+}

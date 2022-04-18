@@ -1,44 +1,43 @@
 import json
 import configparser
-import initCommon # カスタムレイヤー
+import initCommon  # カスタムレイヤー
 import boto3
 import datetime
-from botocore.exceptions import ClientError
+
 
 # global
+LOGGER = None
 LOG_LEVEL = "INFO"
-BUCKET_NAME = ''
-CLIENT_NAME = ''
+
 
 # setter
+def setLogger(logger):
+    global LOGGER
+    LOGGER = logger
+
+
 def setLogLevel(loglevel):
     global LOG_LEVEL
     LOG_LEVEL = loglevel
-def setBucketName(bucket_name):
-    global BUCKET_NAME
-    BUCKET_NAME = bucket_name
-def setClientName(client_name):
-    global CLIENT_NAME
-    CLIENT_NAME = client_name
 
- 
-s3 = boto3.resource('s3')  #S3オブジェクトを取得
-client = boto3.client('s3')
 
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
-def initConfig(filePath):
+def initConfig(clientName):
     try:
+        # 設定ファイル読み込み
+        result = initCommon.getS3Object(clientName, "config.ini")
+
+        # ConfigParserへパース
         config_ini = configparser.ConfigParser()
-        config_ini.read(filePath, encoding='utf-8')
+        config_ini.read_string(result)
 
         setLogLevel(config_ini['logger setting']['loglevel'])
-        setBucketName(config_ini['bucket setting']['bucket_name'])
-        setClientName(config_ini['bucket setting']['client_name'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
+
 
 #####################
 # main
@@ -46,23 +45,22 @@ def initConfig(filePath):
 def lambda_handler(event, context):
     
     # 初期処理
-    initConfig(event["setting"])
-    logger = initCommon.getLogger(LOG_LEVEL)
+    initConfig(event["clientName"])
+    setLogger(initCommon.getLogger(LOG_LEVEL))
+    LOGGER.info("S3バックアップ開始 : %s" % event)
     
-    #dataTypeの判定
-    if 0 == event["dataType"]:
-        score = "score"
-    else:
-        score = "sound"
+    # S3オブジェクトを取得
+    s3 = boto3.resource('s3')  
 
-    # keyの作成　{clientName}/score/{yyyyMMdd}/ファイル名
-    key = CLIENT_NAME + "/" + score + "/" + initCommon.getSysDateJst().strftime("%Y%m%d")  \
-    + "/" + initCommon.getSysDateJst().strftime("%Y-%m-%d %H-%M-%S") + ".json"
-    file_contents = json.dumps(event)  
+    # 対象ファイルをJson→文字列化    
+    file_contents = json.dumps(event)
     
-    print(event)
+    # 保存先
+    nowDate = initCommon.getSysDateJst()
+    key = "bkstrage/amqp/%s/%s.json" % (nowDate.strftime("%Y%m%d"), nowDate.strftime("%Y-%m-%d %H-%M-%S")) 
+    LOGGER.info("S3保存先 [%s][%s]" % (event["clientName"], key))
 
-    obj = s3.Object(BUCKET_NAME,key)     # ⑧バケット名とパスを指定
-    obj.put( Body=file_contents )   # ⑨バケットにファイルを出力
-    logger.info("---- backup put end ")
+    obj = s3.Object(event["clientName"], key)  # ⑧バケット名とパスを指定
+    obj.put(Body=file_contents)  # ⑨バケットにファイルを出力
+    LOGGER.info("S3バックアップ終了")
 
