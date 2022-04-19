@@ -20,6 +20,13 @@ BUCKET_NAME = ''
 CLIENT_NAME = ''
 EXPIRES_INTERVAL = ''
 
+# パラメータ用定数
+CLIENT_NAME = "clientName"
+DATA_COLLECTION_SEQ = "dataCollectionSeq"
+CREATED_DATETIME = "createdDateTime"
+FILE_TYPE = "fileType"
+PLAY_MODE = "playMode"
+
 # setter
 def setLogger(logger):
     global LOGGER
@@ -74,8 +81,7 @@ def initConfig(clientName):
         setDbPassword(config_ini['rds setting']['password'])
         setDbName(config_ini['rds setting']['db'])
         setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
-        # setBucketName(config_ini['bucket setting']['bucket_name'])
-        # setClientName(config_ini['bucket setting']['client_name'])
+        
         setExpiresInterval(config_ini['s3 setting']['expires_interval'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
@@ -91,6 +97,35 @@ def createSoundParam(dataCollectionSeq, createdDateTime, fileType):
     param["p_fileType"] = fileType
     return param
 
+
+# --------------------------------------------------
+# 起動パラメータチェック
+# --------------------------------------------------
+def isArgument(event):
+
+    # トークン取得
+    token = event["idToken"]
+    
+    # グループ名
+    try:
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
+        
+        
+    # 範囲チェック
+    rangeArray = []
+    rangeArray.append(MAIL_SEND_ID) if(1 < event[PLAY_MODE] or event[PLAY_MODE] < 0) else 0
+
+    # データ長異常の場合は例外スロー
+    if 0 < len(rangeArray):
+        raise TypeError("The parameters is length invalid. [%s]" % ",".join(rangeArray))
+
+        
 #####################
 # main
 #####################
@@ -105,55 +140,41 @@ def lambda_handler(event, context):
     # RDSコネクション作成
     rds = rdsCommon.rdsCommon(LOGGER, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_CONNECT_TIMEOUT)
     
-    #soundIdの取得(変数の設定を見直す)
-    # soundId = event["soundId"]
+    # 入力チェック
+    isArgument(event)
+    
     # パラメータ取得
     dataCollectionSeq = event["dataCollectionSeq"]
     createdDateTime = event["createdDateTime"]
     fileType = event["fileType"]
     playMode = event["playMode"]
     
-    #soundIdからファイル名の取得
+    # 音ファイル作成履歴より音ファイル名（フルパス）の取得
     soundResult = rds.fetchone(initCommon.getQuery("sql/sound/findById.sql"),
                                   createSoundParam(dataCollectionSeq, createdDateTime, fileType))
-
-    #none判定
     if soundResult is None:
-        errMsg = "ファイル名の取得に失敗しました。"
-        raise Exception(errMsg)
+        errMsg = "音ファイル作成履歴からファイル名の取得に失敗しました。[dataCollectionSeq:%d / createdDateTime:%s / fileType:%d]" % (dataCollectionSeq, createdDateTime, fileType)
+        LOGGER.error(errMsg)
+        raise Exception("Internal Server Error. [%s]" % errMsg)
 
-    # date = soundResult['createdDatetime']
-    # createDate = datetime.datetime(date.year, date.month, date.day)
-    #
-
-    # 日付文字列を日付型へ変換
-    createdDt = datetime.datetime.strptime(createdDateTime, '%Y/%m/%d %H:%M:%S')
-    createdYMD =  createdDt.strftime("%Y%m%d")
-    print (createdDt)
-    print (createdYMD)
-    
-    #
-    # # バケット、ファイル名の設定
-    # fileName = CLIENT_NAME + "/" + soundResult['edgeName'] + "/" \
-    # + createDate.strftime("%Y%m%d")+ "/" + soundResult['fileName']
-
-    #boto3.client()インスタンス取得
+    # S3クライアント生成
     my_config = Config(
             region_name = 'ap-northeast-1',
             signature_version = 's3v4'
             )
-    s3 = boto3.client('s3',
-            config=my_config)
+    s3 = boto3.client('s3',config=my_config)
 
-    #s3存在判定
-    # key = CLIENT_NAME + "/" + soundResult['edgeName'] + "/" + \
-    # createDate.strftime("%Y%m%d") + "/" + soundResult['fileName']
-    # todo 固定
-    key = "soundstrage/EDGE_001/20210511/20210511104430.mp3"
+
+    # s3存在判定
+    key = soundResult["fileName"]
+    LOGGER.info("S3key:%s" % key)
+    
+    header_location = None
+    result = {}
     contentsresult = s3.list_objects(Bucket=event["clientName"], Prefix=key)
     if "Contents" in contentsresult:
         if event["playMode"] == 0:
-        # s3からダウンロードURLの取得
+            # s3からダウンロードURLの取得
             header_location = s3.generate_presigned_url(
                 ClientMethod = 'get_object',
                 Params = {'Bucket' : event["clientName"], 'Key' : key, \
@@ -161,9 +182,8 @@ def lambda_handler(event, context):
                 ExpiresIn = EXPIRES_INTERVAL,
                 HttpMethod = 'GET'
                 )
-            print(header_location)
+            LOGGER.info("ダウンロード用の署名付きURL : %s" % header_location)
             result = {"Location": header_location}
-            return result
         else:
         # s3から署名付きURLの取得
             header_location = s3.generate_presigned_url(
@@ -175,14 +195,14 @@ def lambda_handler(event, context):
                 ExpiresIn = EXPIRES_INTERVAL,
                 HttpMethod = 'GET'
                 )
-            print(header_location)
+            LOGGER.info("再生用の署名付きURL : %s" % header_location)
             result = {"Location": header_location}
-            return result    
     else:
-        LOGGER.error("音ファイルの取得に失敗しました。")
-        return {"message":"音ファイルの取得に失敗しました。"}
-        sys.exit()
+        errMsg = "S3から音ファイルの取得に失敗しました。[bucket:%s / key:%s]" % (event["clientName"], key)
+        LOGGER.error(errMsg)
+        raise Exception("Internal Server Error. [%s]" % errMsg)
         
     
+    return result
 
 
