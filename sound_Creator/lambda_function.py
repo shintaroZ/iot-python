@@ -33,7 +33,7 @@ CHUNK_TOTAL = "chunk_total"
 DATA = "data"
 
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
-CREATED_DATETIME = "created_datetime"
+CREATED_DATETIME = "createdDatetime"
 FILE_TYPE = "fileType"
 FILE_NAME = "fileName"
 CREATED_AT = "created_at"

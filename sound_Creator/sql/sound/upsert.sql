@@ -9,7 +9,7 @@ into `T_SOUNDFILE_HISTORY`(
 ) 
 values ( 
     %(dataCollectionSeq)d
-    , '%(created_datetime)s'
+    , '%(createdDatetime)s'
     , '%(fileType)s'
     , '%(fileName)s'
     , '%(created_at)s'
