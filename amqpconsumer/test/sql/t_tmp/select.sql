@@ -1,5 +1,0 @@
-SELECT
-    RECEIVED_DATETIME as receivedDateTime
-FROM
-    TMP_TEMPERATURE
-;

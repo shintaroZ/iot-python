@@ -18,6 +18,26 @@ DB_CONNECT_TIMEOUT = 3
 BUCKET_NAME = "hoge"
 CLIENT_NAME = "hoge"
 
+# パラメータ用定数
+CLIENT_NAME = "clientName"
+RECEIVED_MESSAGES = "receivedMessages"
+DEVICE_ID = "deviceId"
+REQUEST_TIMESTAMP = "requestTimeStamp"
+RECORDS = "records"
+TENANT_ID = "tenantId"
+STATUS = "status"
+FILENAME = "filename"
+TIMESTAMP = "timestamp"
+CHUNK_NO ="chunk_no"
+CHUNK_TOTAL = "chunk_total"
+DATA = "data"
+
+DATA_COLLECTION_SEQ = "dataCollectionSeq"
+CREATED_DATETIME = "created_datetime"
+FILE_TYPE = "fileType"
+FILE_NAME = "fileName"
+CREATED_AT = "created_at"
+
 # setter
 def setLogger(logger):
     global LOGGER
@@ -43,20 +63,18 @@ def setDbName(dbName):
 def setDbConnectTimeout(dbConnectTimeout):
     global DB_CONNECT_TIMEOUT
     DB_CONNECT_TIMEOUT = int(dbConnectTimeout)
-def setBucketName(bucketName):
-    global BUCKET_NAME
-    BUCKET_NAME = bucketName
-def setClientName(clientName):
-    global CLIENT_NAME
-    CLIENT_NAME = clientName
     
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
-def initConfig(filePath):
+def initConfig(clientName):
     try:
+        # 設定ファイル読み込み
+        result = initCommon.getS3Object(clientName, "config.ini")
+
+        # ConfigParserへパース
         config_ini = configparser.ConfigParser()
-        config_ini.read(filePath, encoding='utf-8')
+        config_ini.read_string(result)
 
         setLogLevel(config_ini['logger setting']['loglevel'])
         setDbHost(config_ini['rds setting']['host'])
@@ -66,8 +84,6 @@ def initConfig(filePath):
         setDbName(config_ini['rds setting']['db'])
         setDbConnectTimeout(config_ini['rds setting']['connect_timeout'])
         
-        setBucketName(config_ini['bucket setting']['bucket_name'])
-        setClientName(config_ini['bucket setting']['client_name'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
@@ -121,25 +137,6 @@ def getParamReConv(records):
 def convertEpokMillSecToDateTime(timestamp):
     return datetime.datetime.fromtimestamp(timestamp / 1000, datetime.timezone(datetime.timedelta(hours=9)) )
      
-# --------------------------------------------------
-# エッジマスタ取得用のパラメータ生成
-# --------------------------------------------------
-def createMasterEdgeParam(tenantId):
-    param = {}
-    param["p_edge_id"] = tenantId
-    return param
-    
-# --------------------------------------------------
-# 音ファイル作成履歴更新用のパラメータ生成
-# --------------------------------------------------
-def createSoundParam(ceatedDateTime, edgeName, status, filename):
-    param = {}
-    param["p_created_datetime"] = ceatedDateTime
-    param["p_edge_name"] = edgeName
-    param["p_status"] = status
-    param["p_file_name"] = filename
-    param["p_created_at"] = initCommon.getSysDateJst()
-    return param
 
 #####################
 # main
@@ -147,8 +144,9 @@ def createSoundParam(ceatedDateTime, edgeName, status, filename):
 def lambda_handler(event, context):
 
     # 初期処理
-    initConfig(event["setting"])
+    initConfig(event[CLIENT_NAME])
     setLogger(initCommon.getLogger(LOG_LEVEL))
+    # setLogger(initCommon.getLogger("DEBUG"))
     
     LOGGER.info("音ファイル作成機能開始")
     
@@ -158,53 +156,59 @@ def lambda_handler(event, context):
     # S3リソースのインスタンス作成
     s3 = boto3.resource('s3')
     
-    # レコード再形成
-    convRecords = getParamReConv(event['records'])
+    # 起動パラメータ.受信メッセージ一覧分繰り返し
+    for messageDict in event[RECEIVED_MESSAGES]:
+        
+        # レコード再形成
+        convRecords = getParamReConv(messageDict[RECORDS])
     
-    # レコード分繰り返し
-    for record in convRecords:
-        
-        # パラメータ取得
-        tenantId = record["tenantId"]
-        status = record["status"]
-        filename = record["filename"]
-        timestamp = record["timestamp"]
-        # chunk_no = record["chunk_no"]
-        # chunk_total = record["chunk_total"]
-        data = record["data"]
-        LOGGER.info("param(tenantId:%s, status:%s, filename:%s, timestamp:%s, len(data):%d)" % 
-                    (tenantId, status, filename, timestamp, len(data)))
-        
-        # エポックミリ秒→datetime変換
-        ceatedDateTime = convertEpokMillSecToDateTime(timestamp)
-        
-        # エッジマスタ検索
-        edgeRecord = rds.fetchone(initCommon.getQuery("sql/m_edge/findById.sql"),
-                                  createMasterEdgeParam(tenantId))
-        if (edgeRecord is None):
-            errMsg = "エッジマスタに存在しない設備IDが連携されました。:%s" %  tenantId
-            LOGGER.error(errMsg)
-            return
-        
-        # 音ファイル作成履歴の追加
-        rds.execute(initCommon.getQuery("sql/sound/insert.sql"),
-                    createSoundParam(ceatedDateTime,
-                                     edgeRecord["edgeName"],
-                                     status,
-                                     filename))
-        
-        # S3のオブジェクトkey生成
-        key = "%s/%s/%s/%s" % (CLIENT_NAME, 
-                               edgeRecord["edgeName"],
-                               ceatedDateTime.strftime("%Y%m%d"),
-                               filename)
-                               
-        # dataのデコード
-        decodeData = base64.b64decode(data)
-        
-        # 音ファイルをS3へput
-        obj = s3.Object(BUCKET_NAME, key)
-        obj.put( Body=decodeData, ContentType="audio/mp3" )
+        # レコード分繰り返し
+        for record in convRecords:
+            
+            # パラメータ取得
+            tenantId = record["tenantId"]
+            status = record["status"]
+            filename = record["filename"]
+            timestamp = record["timestamp"]
+            data = record["data"]
+            LOGGER.info("param(tenantId:%s, status:%s, filename:%s, timestamp:%s, len(data):%d)" % 
+                        (tenantId, status, filename, timestamp, len(data)))
+            
+            # エポックミリ秒→datetime変換
+            ceatedDateTime = convertEpokMillSecToDateTime(timestamp)
+            
+            # S3保存先
+            key = "soundstrage/%s/%s/%s" % (tenantId
+                                            , ceatedDateTime.strftime("%Y%m%d")
+                                            , filename)
+            LOGGER.info("S3保存先[%s]" % key)
+            
+            # データ定義マスタシーケンスの取得
+            dataCollectionResult = rds.fetchone(initCommon.getQuery("sql/m_data_collection/findById.sql"),
+                                                {
+                                                    DEVICE_ID : messageDict[DEVICE_ID]
+                                                })
+            if (dataCollectionResult is None):
+                LOGGER.warn("データ定義マスタが存在しないため、スキップします。[tenantId:%s]" % messageDict[DEVICE_ID] )
+                continue
+            LOGGER.info("データ定義マスタシーケンス[%d]" % dataCollectionResult[DATA_COLLECTION_SEQ])
+            
+            # 音ファイル作成履歴の追加
+            rds.execute(initCommon.getQuery("sql/sound/upsert.sql")
+                        ,{
+                            DATA_COLLECTION_SEQ : dataCollectionResult[DATA_COLLECTION_SEQ]
+                            , CREATED_DATETIME : ceatedDateTime
+                            , FILE_TYPE : status
+                            , FILE_NAME : key
+                            , CREATED_AT : initCommon.getSysDateJst()
+                            })
+            
+            # dataのデコード
+            decodeData = base64.b64decode(data)
+            
+            # 音ファイルをS3へput
+            obj = s3.Object(event[CLIENT_NAME], key)
+            obj.put( Body=decodeData, ContentType="audio/mp3" )
         
     # コミット
     rds.commit()

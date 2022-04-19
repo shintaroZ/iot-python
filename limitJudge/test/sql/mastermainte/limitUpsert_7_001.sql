@@ -3,7 +3,7 @@
 データ定義マスタシーケンス:7
 */
 insert 
-into ins001.`M_LIMIT`( 
+into `M_LIMIT`( 
     `DATA_COLLECTION_SEQ`
     , `LIMIT_SUB_NO`
     , `LIMIT_JUDGE_TYPE`
