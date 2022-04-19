@@ -3,7 +3,6 @@ select
     tpt.DATA_COLLECTION_SEQ as dataCollectionSeq
     , tpt.RECEIVED_DATETIME as receivedDatetime
     , tpt.SENSOR_VALUE as sensorValue
-    , tpt.CREATED_AT as createdAt
 from
     T_PUBLIC_TIMESERIES tpt
 where

@@ -32,6 +32,12 @@ class LimitJudgeTypeEnum(IntEnum):
     Exceed = 0      # 超過
     Match = 1       # 一致
     Less = 2        # 不足
+    
+# エッジ区分要素
+class EdgeTypeEnum(IntEnum):
+    DeviceGateway = 1
+    Monone = 2
+
 # global
 LOGGER = None
 CONNECT = None
@@ -62,6 +68,8 @@ LIMIT_SUB_NO = "limitSubNo"
 MAIL_SEND_SEQ = "mailSendSeq"
 SEND_STATUS = "sendStatus"
 
+EDGE_TYPE = "edgeType"
+EQUIPMENT_ID = "equipmentId"
 DEVICE_ID = "deviceId"
 SENSOR_ID = "sensorId"
 SENSOR_NAME = "sensorName"
@@ -297,7 +305,7 @@ def createPublicTimeseriesLimitParam(limitCountType, limitCount):
     # 閾値成立回数条件が0:継続のみ
     if limitCountType == 0:
         # センサの受信タイムスタンプから閾値成立回数リセット分の範囲条件を追加
-        paramStr = "limit %d" % limitCount
+        paramStr = "limit %d" % (limitCount + 6)
     
     return paramStr
 
@@ -307,7 +315,7 @@ def createPublicTimeseriesLimitParam(limitCountType, limitCount):
 def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=None
                               , limitSubNo=None, timeStamp=None, mailSendSeq=None
                               , sendStatus=None, whereParam="", whereSubParam=""
-                              , detectionDateTime=None, limitParam=None):
+                              , detectionDateTime=None, limitParam=None, equipmentId=None):
 
     params = {}
     params[DEVICE_ID] = deviceId
@@ -321,6 +329,7 @@ def createDefaultCommonParams(deviceId=None, sensorId=None, dataCollectionSeq=No
     params["whereSubParam"] = whereSubParam
     params["limitParam"] = limitParam
     params[DETECTION_DATETIME] = detectionDateTime
+    params[EQUIPMENT_ID] = equipmentId
 
     return createCommonParams(params)
 
@@ -341,7 +350,7 @@ def lambda_handler(event, context):
     # 初期処理
     initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
-    setLogger(initCommon.getLogger("DEBUG"))
+    # setLogger(initCommon.getLogger("DEBUG"))
 
     LOGGER.info('閾値判定機能開始 : %s' % event)
 
@@ -384,7 +393,15 @@ def lambda_handler(event, context):
             
             # 時系列より閾値判定対象の過去データ取得
             # 性能用にSQL分割
-            publicRecords = rds.fetchall(initCommon.getQuery("sql/t_public_timeseries/findbyId.sql")
+            filePath = ""
+            if limitInfoArray[0][EDGE_TYPE] == EdgeTypeEnum.DeviceGateway:
+                filePath = "sql/t_public_timeseries/findbyId.sql"
+            elif limitInfoArray[0][EDGE_TYPE] == EdgeTypeEnum.Monone:
+                filePath = "sql/t_score/findbyId.sql"
+            else:
+                LOGGER.warn("エッジ区分が不正です。[%s]" % limitInfoArray[0][EDGE_TYPE])
+                continue
+            publicRecords = rds.fetchall(initCommon.getQuery(filePath)
                                          , createDefaultCommonParams(dataCollectionSeq = limitInfoArray[0][DATA_COLLECTION_SEQ]
                                                                      , detectionDateTime = detectionDateTimeStr
                                                                      , whereParam = createPublicTimeseriesWhereParam(limitInfoArray[0][LIMIT_COUNT_RESET_RANGE], cnvTimeStamp)
@@ -424,11 +441,11 @@ def lambda_handler(event, context):
             continue
 
         elif liArray[0][NEXT_ACTION] == NextActionEnum.MailSend:
-
+            LOGGER.info("後続アクションあり(メール通知) [dataCollectionSeq:%d /equipmentId:%s]" % (liArray[0][DATA_COLLECTION_SEQ], liArray[0][EQUIPMENT_ID]))
             # メール通知管理より前回通知時刻取得
             mailSendArray = rds.fetchall(initCommon.getQuery("sql/m_mail_send/findbyId.sql")
                                          ,createDefaultCommonParams(dataCollectionSeq = liArray[0][DATA_COLLECTION_SEQ]
-                                                                    ))
+                                                                    , equipmentId=limitInfoArray[0][EQUIPMENT_ID]))
             # 現在時刻取得（タイムゾーン解除の為、replace）
             currentDateTime = initCommon.getSysDateJst().replace(tzinfo=None)
         

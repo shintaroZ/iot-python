@@ -1,5 +1,7 @@
 select
-    mlc.DATA_COLLECTION_SEQ as dataCollectionSeq
+    mdc.EDGE_TYPE as edgeType
+    , mdc.EQUIPMENT_ID as equipmentId
+    , mlc.DATA_COLLECTION_SEQ as dataCollectionSeq
     , mlc.LIMIT_COUNT_TYPE as limitCountType
     , mlc.LIMIT_COUNT as limitCount
     , mlc.LIMIT_COUNT_RESET_RANGE as limitCountResetRange
@@ -9,9 +11,11 @@ select
     , ml.LIMIT_JUDGE_TYPE as limitJudgeType
     , ml.LIMIT_VALUE as limitValue
 from
-    M_LIMIT_CHECK mlc
+	M_DATA_COLLECTION mdc 
+    inner join M_LIMIT_CHECK mlc
+        on mlc.DATA_COLLECTION_SEQ = mdc.DATA_COLLECTION_SEQ
     inner join M_LIMIT ml
-        on mlc.DATA_COLLECTION_SEQ = ml.DATA_COLLECTION_SEQ
+        on ml.DATA_COLLECTION_SEQ = mdc.DATA_COLLECTION_SEQ
 where
-    mlc.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
+    mdc.DATA_COLLECTION_SEQ = %(dataCollectionSeq)d
 ;

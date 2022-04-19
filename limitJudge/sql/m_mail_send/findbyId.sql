@@ -4,6 +4,9 @@ select
     , ifnull(tmsm.updatedAt, str_to_date('19000101000000', '%%Y%%m%%d%%k%%i%%s')) as beforeMailSendDateTime
 from
     M_MAIL_SEND mms
+    inner join M_MAIL_SEND_EQUIPMENT mmseqp
+    on mmseqp.MAIL_SEND_SEQ = mms.MAIL_SEND_SEQ
+    and mmseqp.EQUIPMENT_ID = '%(equipmentId)s'
     left outer join (
         select
             max(tmsmSub.UPDATED_AT) as updatedAt
