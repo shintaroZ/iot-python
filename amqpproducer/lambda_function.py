@@ -44,18 +44,21 @@ def setMqPassword(mqPassword):
 def isArgument(event):
 
     # グループ名
-    try:
-        # トークン取得
-        token = event["idToken"]
-
-        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+    if event.get("isTokenSkip") is None:
+        try:
+            isTokenSkip = False
+            
+            # トークン取得
+            token = event["idToken"]
     
-        # 顧客名がグループ名に含まれること
-        if (event["clientName"] not in groupList):
-            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
-
-    except Exception as ex:
-        raise Exception("Authentication Error. [%s]" %  ex)
+            groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+        
+            # 顧客名がグループ名に含まれること
+            if (event["clientName"] not in groupList):
+                raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+    
+        except Exception as ex:
+            raise Exception("Authentication Error. [%s]" %  ex)
      
     # 引数がある場合はチェック
     try:

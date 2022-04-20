@@ -8,6 +8,12 @@ import boto3
 from botocore.exceptions import ClientError
 import re # 正規表現
 from enum import IntEnum
+import smtplib
+from email.message import EmailMessage
+
+# from email.mime.text import MIMEText
+# from email.header import Header
+# from email import charset
 
 # 送信ステータス
 class SendStatusEnum(IntEnum):
@@ -34,6 +40,10 @@ DB_CONNECT_TIMEOUT = 3
 RETRY_MAX_COUNT = 3
 RETRY_INTERVAL = 500
 SOURCE_ADDRESS = "hoge"
+SMTP_ENDPOINT = "hoge"
+SMTP_PORT = 465
+SMTP_USER = "hoge"
+SMTP_PASS = "hoge"
 
 # カラム名定数
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
@@ -161,6 +171,23 @@ def setSourceAddress(sourceAddress):
     global SOURCE_ADDRESS
     SOURCE_ADDRESS = sourceAddress
 
+def setSmtpEndpoint(smtpEndpoint):
+    global SMTP_ENDPOINT
+    SMTP_ENDPOINT = smtpEndpoint
+    
+def setSmtpPort(smtpPort):
+    global SMTP_PORT
+    SMTP_PORT = smtpPort
+    
+def setSmtpUser(smtpUser):
+    global SMTP_USER
+    SMTP_USER = smtpUser
+    
+def setSmtpPass(smtpPass):
+    global SMTP_PASS
+    SMTP_PASS = smtpPass
+
+
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -183,6 +210,10 @@ def initConfig(clientName):
         setRetryMaxCount(config_ini['rds setting']['retryMaxcount'])
         setRetryInterval(config_ini['rds setting']['retryinterval'])
         setSourceAddress(config_ini['ses setting']['sourceAddress'])
+        setSmtpEndpoint(config_ini['ses setting']['smtpEndpoint'])
+        setSmtpPort(config_ini['ses setting']['smtpPort'])
+        setSmtpUser(config_ini['ses setting']['smtpUser'])
+        setSmtpPass(config_ini['ses setting']['smtpPass'])
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
@@ -215,6 +246,7 @@ def createMailSendManagedParams(sendStatus, record, sendFrequancy):
     params[UPDATED_AT] = initCommon.getSysDateJst()
 
     whereArray = []
+    whereArray.append("SEND_STATUS = 0")
     whereArray.append("MAIL_SEND_SEQ = %d" % record[MAIL_SEND_SEQ])
     # 送信頻度パラメータに応じて条件追記
     if sendFrequancy == SendFrequancyEnum.EachTime:
@@ -251,6 +283,20 @@ def send_mail(sesClient, source, to, subject, body):
         )
 
     return response
+# --------------------------------------------------
+# メール送信用にJSON形式のパラメータ作成
+# --------------------------------------------------
+def createJson(source, to, subject, body):
+    
+    eventTable = {}
+    eventTable["source"]  = source
+    eventTable["to"]      = to
+    eventTable["subject"] = subject
+    eventTable["body"]    = body
+    
+    strJsonResult = json.dumps(eventTable, ensure_ascii=False)
+    # LOGGER.info(strJsonResult)
+    return strJsonResult
 
 #####################
 # main
@@ -268,7 +314,11 @@ def lambda_handler(event, context):
 
     # AmazonSESクライアント作成
     sesClient = boto3.client('ses', region_name='ap-northeast-1')
-
+    lambdaClient = boto3.client("lambda")
+    # SMTPサーバーに接続する
+    con = smtplib.SMTP_SSL(SMTP_ENDPOINT, 465)
+    con.login(SMTP_USER, SMTP_PASS)
+    
     # メール通知先
     meilSendRecords = rds.fetchall(initCommon.getQuery("sql/t_mail_send_managed/findAllforMailSend.sql"))
 
@@ -319,12 +369,15 @@ def lambda_handler(event, context):
                 LOGGER.info("メール送信します。[index:%d, 送信頻度:%s, 宛先:%s]"
                             % (i, msRecord[SEND_FREQUANCY], msRecord[EMAIL_ADDRESS]) )
                 try:
-                    # メール送信 SOURCE_ADDRESS
-                    send_mail(sesClient
-                              , SOURCE_ADDRESS
-                              , msRecord[EMAIL_ADDRESS]
-                              , msRecord[MAIL_SUBJECT]
-                              , "\r\n".join(mailTextArray))
+                    message = EmailMessage()
+                    message.set_content("\r\n".join(mailTextArray))
+                    message['Subject']=msRecord[MAIL_SUBJECT]
+                    message['From']=SOURCE_ADDRESS
+                    message['TO']=msRecord[EMAIL_ADDRESS]
+                    
+                    # メールを送信する
+                    con.send_message(message)
+                    
                     # ステータス更新
                     rds.execute(initCommon.getQuery("sql/t_mail_send_managed/update.sql")
                             ,createMailSendManagedParams(SendStatusEnum.SendSuccess, sourceRecords[i], msRecord[SEND_FREQUANCY]))
@@ -341,3 +394,5 @@ def lambda_handler(event, context):
 
     # close
     del rds
+    
+    con.close()

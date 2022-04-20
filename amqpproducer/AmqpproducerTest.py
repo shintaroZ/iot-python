@@ -21,7 +21,24 @@ class AmqpproducerTest(unittest.TestCase):
     # クラスメソッドとして定義する
     @classmethod
     def setUpClass(self):
-        pass
+        lambda_function.initConfig("eg-iot-develop")
+        lambda_function.setLogger(initCommon.getLogger(lambda_function.LOG_LEVEL))
+    
+        # 検証用にMQ接続＋キュー取得
+        MqConnect = mqCommon.mqCommon(lambda_function.LOGGER
+                                      , self.UT_MQ_HOST
+                                      , lambda_function.MQ_PORT
+                                      , lambda_function.MQ_USER
+                                      , lambda_function.MQ_PASSWORD)
+        
+        # キューを全てクリア
+        resultMsg = MqConnect.getQueueMessage(queueName="Queue_To_Tenant_1"
+                                              , isErrDel=True)
+        print(resultMsg)
+        
+        
+        del MqConnect
+        
 
     @classmethod
     def tearDownClass(self):

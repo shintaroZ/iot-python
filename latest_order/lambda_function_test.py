@@ -31,6 +31,22 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_NAME
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
+
+    # ----------------------------------------------------------------------
+    # mononeのscoreがnullの場合、監視テーブルに登録されること。
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_009(self):
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
+    
+        # 実行
+        event = initCommon.readFileToJson('test/function/input009.json')
+        result = lambda_function.lambda_handler(event, None)
+    
+        print ("============ result ============")
+        print (result)
+        self.assertEqual(result["clientName"], "eg-iot-develop")
+        self.assertEqual(len(result["records"]), 0)
+
     # ----------------------------------------------------------------------
     # getMasterDataCollection()の正常系テスト
     # 該当データありの場合、レコード情報が返却されること。
@@ -442,4 +458,7 @@ class LambdaFunctionTest(unittest.TestCase):
         print (result)
         self.assertEqual(result["clientName"], "eg-iot-develop")
         self.assertEqual(len(result["records"]), 0)
+        
+        
+        
     

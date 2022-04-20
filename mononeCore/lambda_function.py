@@ -128,6 +128,7 @@ def invokeLambda(lambdaFuncName, lambdaArn, param):
     LOGGER.info("%s 終了 : %s" % (lambdaFuncName, resultJson))
     return resultJson
 
+
 # --------------------------------------------------
 # Dict型をJson形式の文字列に変換して返却
 # --------------------------------------------------
@@ -139,31 +140,6 @@ def convDictToStr(param):
     else:
         resultStr = param
     return resultStr
-
-# --------------------------------------------------
-# 音ファイル作成用のパラメータ作成
-# --------------------------------------------------
-def createSoundCreaterParam(clientName, param):
-
-    resultDict = {}
-    
-    childDict = {}
-    childDict[DEVICE_ID] = param.get(DEVICE_ID)
-    childDict[REQUEST_TIMESTAMP] = param.get(REQUEST_TIMESTAMP)
-    
-    reArray = []
-    for record in param.get(RECORDS):
-        reDict = {}
-        reDict[TENANT_ID] = record.get(TENANT_ID)
-        reDict[SCORE] = record.get(SCORE)
-        
-        reArray.append(reDict)
-    childDict[RECORDS] = reArray
-    
-    resultDict[CLIENT_NAME] = clientName
-    resultDict[RECEIVED_MESSAGES] = childDict
-    
-    return resultDict
 
 
 # --------------------------------------------------
@@ -181,8 +157,35 @@ def createLatestOrderParam(clientName, param):
     for record in param.get(RECORDS):
         reDict = {}
         reDict[TENANT_ID] = record.get(TENANT_ID)
-        reDict[STATUS] = 2 # 現在音は2
-        reDict[score] = record.get(FILENAME)
+        reDict[SCORE] = record.get(SCORE)
+        
+        reArray.append(reDict)
+    childDict[RECORDS] = reArray
+    
+    resultDict[CLIENT_NAME] = clientName
+    resultDict[RECEIVED_MESSAGES] = [childDict]  # 配列
+    
+    return resultDict
+
+
+# --------------------------------------------------
+# 現在音ファイル作成用のパラメータ作成
+# --------------------------------------------------
+def createCurrentSoundCreaterParam(clientName, param):
+
+    resultDict = {}
+    
+    childDict = {}
+    childDict[DEVICE_ID] = param.get(DEVICE_ID)
+    childDict[REQUEST_TIMESTAMP] = param.get(REQUEST_TIMESTAMP)
+    
+    # 現在音はrecord配下を再整形
+    reArray = []
+    for record in param.get(RECORDS):
+        reDict = {}
+        reDict[TENANT_ID] = record.get(TENANT_ID)
+        reDict[STATUS] = 2  # 現在音は2
+        reDict[FILENAME] = record.get(FILENAME)
         reDict[TIMESTAMP] = None
         reDict[CHUNK_NO] = record.get(CHUNK_NO)
         reDict[CHUNK_TOTAL] = record.get(CHUNK_TOTAL)
@@ -192,9 +195,46 @@ def createLatestOrderParam(clientName, param):
     childDict[RECORDS] = reArray
     
     resultDict[CLIENT_NAME] = clientName
-    resultDict[RECEIVED_MESSAGES] = childDict
+    resultDict[RECEIVED_MESSAGES] = [childDict]  # 配列
     
     return resultDict
+
+
+# --------------------------------------------------
+# 異常音ファイル作成用のパラメータ作成
+# --------------------------------------------------
+def createErrSoundCreaterParam(clientName, param):
+
+    resultDict = {}
+    
+    childDict = {}
+    childDict[DEVICE_ID] = param.get(DEVICE_ID)
+    childDict[REQUEST_TIMESTAMP] = param.get(REQUEST_TIMESTAMP)
+    childDict[RECORDS] = param.get(RECORDS)
+    
+    resultDict[CLIENT_NAME] = clientName
+    resultDict[RECEIVED_MESSAGES] = [childDict]  # 配列
+    
+    return resultDict
+
+
+# --------------------------------------------------
+# MQ送信機能（異常音フォルダ削除）用のパラメータ作成
+# --------------------------------------------------
+def createErrDelAmqpProducerParam(clientName, param):
+
+    resultDict = {}
+    
+    childDict = {}
+    childDict[DEVICE_ID] = param.get(DEVICE_ID)
+    childDict[ROUTING_KEY] = "Clean_Error_Marking"
+    childDict[RECORDS] = {}
+    
+    resultDict[CLIENT_NAME] = clientName
+    resultDict[SEND_MESSAGES] = [childDict]  # 配列
+    
+    return resultDict
+
 
 #####################
 # main
@@ -230,21 +270,38 @@ def lambda_handler(event, context):
                 scResult = invokeLambda(lambdaFuncName="公開DB作成機能"
                                         , lambdaArn=LATEST_ORDER_ARN
                                         , param=lsParam)
-                pass
+                # ****** 閾値判定機能 ******
+                limitResult = invokeLambda(lambdaFuncName="閾値判定機能"
+                                           , lambdaArn=LIMIT_JUDGE_ARN
+                                           , param=scResult)
+                # # ****** メール通知機能 ******
+                # mailResult = invokeLambda(lambdaFuncName="メール通知機能"
+                #                           , lambdaArn=MAIL_SENDER_ARN
+                #                           , param=limitResult)
+                
             elif message[QUEUE] == "New_Error":
-                pass
+                neParam = createErrSoundCreaterParam(event["clientName"], message)
+                # ****** 異常音ファイル作成機能 ******
+                neResult = invokeLambda(lambdaFuncName="異常音ファイル作成機能"
+                                        , lambdaArn=SOUND_CREATER_ARN
+                                        , param=neParam)
+                
+                # ****** MQ送信機能 ******
+                scResult = invokeLambda(lambdaFuncName="異常音ファイル作成機能"
+                                        , lambdaArn=SOUND_CREATER_ARN
+                                        , param=neParam)
+                
+                
             elif message[QUEUE] == "Restart_AI":
                 pass
             elif message[QUEUE] == "Restart_Edge_Failed":
                 pass
             elif message[QUEUE] == "Transfer_Current_Sound":
-                scParam = createSoundCreaterParam(event["clientName"], message)
-                # ****** 音ファイル作成機能 ******
-                scResult = invokeLambda(lambdaFuncName="音ファイル作成機能"
+                scParam = createCurrentSoundCreaterParam(event["clientName"], message)
+                # ****** 現在音ファイル作成機能 ******
+                scResult = invokeLambda(lambdaFuncName="現在音ファイル作成機能"
                                         , lambdaArn=SOUND_CREATER_ARN
                                         , param=scParam)
                  
             print (message)
-            
-            
      
