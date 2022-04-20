@@ -180,7 +180,7 @@ def lambda_handler(event, context):
     resultDict["clientName"] = event["clientName"]
     resultDict["receivedMessages"] = receivedMessagesArray
     
-    LOGGER.info("result :%s" % resultDict)
+    LOGGER.info("MQ Result :%s" % resultDict)
     
     # 各種クローズ
     del rds
