@@ -5,6 +5,7 @@ import rdsCommon # カスタムレイヤー
 import boto3
 import datetime
 import base64
+from datetime import datetime as dt
 
 # global
 LOGGER = None
@@ -15,8 +16,6 @@ DB_USER = "hoge"
 DB_PASSWORD = "hoge"
 DB_NAME = "hoge"
 DB_CONNECT_TIMEOUT = 3
-BUCKET_NAME = "hoge"
-CLIENT_NAME = "hoge"
 
 # パラメータ用定数
 CLIENT_NAME = "clientName"
@@ -35,7 +34,7 @@ DATA = "data"
 DATA_COLLECTION_SEQ = "dataCollectionSeq"
 CREATED_DATETIME = "createdDatetime"
 FILE_TYPE = "fileType"
-FILE_NAME = "fileName"
+FILE_NAME = "filename"
 CREATED_AT = "created_at"
 
 # setter
@@ -101,7 +100,7 @@ def getParamReConv(records):
     bk_key = ""
     
     # 設備ID,ファイル名,チャンクトータル,チャンクNoで昇順ソート
-    sortedRecords = sorted(records,key=lambda x:(x['tenantId'], x['filename'], x['chunk_total'], x['chunk_no']))
+    sortedRecords = sorted(records,key=lambda x:(x["tenantId"], x["filename"], x['chunk_total'], x['chunk_no']))
     for i in range(len(sortedRecords)):
         record = sortedRecords[i]
         
@@ -144,7 +143,7 @@ def convertEpokMillSecToDateTime(timestamp):
 def lambda_handler(event, context):
 
     # 初期処理
-    initConfig(event[CLIENT_NAME])
+    initConfig(event["clientName"])
     setLogger(initCommon.getLogger(LOG_LEVEL))
     # setLogger(initCommon.getLogger("DEBUG"))
     
@@ -157,7 +156,7 @@ def lambda_handler(event, context):
     s3 = boto3.resource('s3')
     
     # 起動パラメータ.受信メッセージ一覧分繰り返し
-    for messageDict in event[RECEIVED_MESSAGES]:
+    for messageDict in event["receivedMessages"]:
         
         # レコード再形成
         convRecords = getParamReConv(messageDict[RECORDS])
@@ -166,16 +165,14 @@ def lambda_handler(event, context):
         for record in convRecords:
             
             # パラメータ取得
-            tenantId = record["tenantId"]
-            status = record["status"]
-            filename = record["filename"]
-            timestamp = record["timestamp"]
-            data = record["data"]
-            LOGGER.info("param(tenantId:%s, status:%s, filename:%s, timestamp:%s, len(data):%d)" % 
-                        (tenantId, status, filename, timestamp, len(data)))
+            tenantId = record.get("tenantId")
+            status = record.get("status")
+            filename = record.get("filename")
+            timestamp = record.get("timestamp")
+            data = record.get("data")
             
-            # エポックミリ秒→datetime変換
-            ceatedDateTime = convertEpokMillSecToDateTime(timestamp)
+            # ファイル名からdatetime変換
+            ceatedDateTime = dt.strptime(filename[0:14], '%Y%m%d%H%M%S')
             
             # S3保存先
             key = "soundstrage/%s/%s/%s" % (tenantId

@@ -11,7 +11,7 @@ values (
     %(dataCollectionSeq)d
     , '%(createdDatetime)s'
     , '%(fileType)s'
-    , '%(fileName)s'
+    , '%(filename)s'
     , '%(created_at)s'
 )
 ON DUPLICATE KEY UPDATE 

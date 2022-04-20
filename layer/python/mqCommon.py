@@ -164,7 +164,7 @@ class mqCommon:
                 if isErr and isErrDel:
                     self.CHANNEL.basic_ack(delivery_tag=method_frame.delivery_tag)
         
-        self.LOGGER.info("%s result : %s" % (queueName, records))
+        self.LOGGER.info("+++++++ %s %s result : %s" % (queueName, idArray, records))
         
         # クローズ
         self.CHANNEL.close()
