@@ -6,11 +6,19 @@ import time
 import json
 import initCommon  # カスタムレイヤー
 import rdsCommon  # カスタムレイヤー
+from enum import IntEnum
 
 
+# エッジ区分要素
+class EdgeTypeEnum(IntEnum):
+    DeviceGateway = 1
+    Monone = 2
+
+    
 # athena setting
-ATENA_DATABASE = 'hoge'
-ATENA_TABLE = 'hoge'
+ATHENA_DATABASE = 'hoge'
+ATHENA_DGW_TABLE = 'hoge'
+ATHENA_MONONE_TABLE = 'hoge'
 S3_OUTPUT = 's3://hoge'
 RETRY_COUNT = 10
 RETRY_INTERVAL = 200
@@ -24,45 +32,70 @@ LOG_LEVEL = "INFO"
 LOOGER = None
 CLIENT_NAME = ""
 
+
 # setter
 # athena setting
-def setAtenaDatabase(atenaDatabase):
-    global ATENA_DATABASE
-    ATENA_DATABASE = atenaDatabase
-def setAtenaTable(atenaTable):
-    global ATENA_TABLE
-    ATENA_TABLE = atenaTable
+def setAthenaDatabase(atenaDatabase):
+    global ATHENA_DATABASE
+    ATHENA_DATABASE = atenaDatabase
+
+
+def setAthenaDgwTable(atenaTable):
+    global ATHENA_DGW_TABLE
+    ATHENA_DGW_TABLE = atenaTable
+
+
+def setAthenaMononeTable(athenaMononeTable):
+    global ATHENA_MONONE_TABLE
+    ATHENA_MONONE_TABLE = athenaMononeTable
+
+
 def setS3Output(s3Output):
     global S3_OUTPUT
     S3_OUTPUT = s3Output
+
+
 def setRetryCount(retryCount):
     global RETRY_COUNT
     RETRY_COUNT = int(retryCount)
+
+
 def setStartDateTime(startDateTime):
     global START_DATE_TIME
     START_DATE_TIME = startDateTime
+
+
 def setEndDateTime(endDateTime):
     global END_DATE_TIME
     END_DATE_TIME = endDateTime
+
+
 def setRetryInterval(retryInterval):
     global RETRY_INTERVAL
     RETRY_INTERVAL = int(retryInterval)
+
 
 # logger setting
 def setLogLevel(loglevel):
     global LOG_LEVEL
     LOG_LEVEL = loglevel
+
+
 def setLogger(logger):
     global LOGGER
     LOGGER = logger
+
+
 def setClientName(clientName):
     global CLIENT_NAME
-    CLIENT_NAME= clientName
+    CLIENT_NAME = clientName
 
 
 def setLatestOrderArn(latestOrderArn):
     global LATERST_ORDER_ARN
     LATERST_ORDER_ARN = latestOrderArn
+
+
 # --------------------------------------------------
 # 設定ファイル読み込み
 # --------------------------------------------------
@@ -76,49 +109,51 @@ def initConfig(clientName):
         config_ini.read_string(result)
 
         # athena setting
-        setAtenaDatabase(config_ini['athena setting']['database'])
-        setAtenaTable(config_ini['athena setting']['table'])
+        setAthenaDatabase(config_ini['athena setting']['database'])
+        setAthenaDgwTable(config_ini['athena setting']['table_dgw'])
+        setAthenaMononeTable(config_ini['athena setting']['table_monone'])
         setS3Output(config_ini['athena setting']['output'])
         setRetryCount(config_ini['athena setting']['retryCount'])
         setRetryInterval(config_ini['athena setting']['retryInterval'])
-        setLatestOrderArn(config_ini['athena setting']['latestOrderArn'])
+        setLatestOrderArn(config_ini['lambda setting']['latestOrderArn'])
 
         # logger setting
         setLogLevel(config_ini['logger setting']['loglevel'])
-        
 
     except Exception as e:
         print ('設定ファイルの読み込みに失敗しました。')
         raise(e)
+
 
 # --------------------------------------------------
 # 抽出条件の作成
 # --------------------------------------------------
 def createWhereParam(event):
 
-    # 必須判定付の起動パラメータ取得
-    startDateTime = "1900-01-01 00:00:00" if "startDateTime" not in event else event["startDateTime"]
-    endDateTime = "9999-12-31 23:59:59" if "endDateTime" not in event else event["endDateTime"]
-    deviceId = "" if "deviceId" not in event else event["deviceId"]
-    sensorId = "" if "sensorId" not in event else event["sensorId"]
-
     # 日時文字列から日付部分を抽出
-    startDt = datetime.datetime.strptime(startDateTime, '%Y-%m-%d %H:%M:%S')
-    endDt = datetime.datetime.strptime(endDateTime, '%Y-%m-%d %H:%M:%S')
+    startDt = datetime.datetime.strptime(event["startDateTime"], '%Y-%m-%d %H:%M:%S')
+    endDt = datetime.datetime.strptime(event["endDateTime"], '%Y-%m-%d %H:%M:%S')
     startDateInt = int(startDt.strftime('%Y%m%d'))
     endDateInt = int(endDt.strftime('%Y%m%d'))
 
     whereParamArray = []
-    whereParamArray.append("createdt between %d and %d" % (startDateInt, endDateInt))
-    whereParamArray.append("rMessages.requesttimestamp between CAST('%s' as timestamp) and CAST('%s' as timestamp)" % (startDateTime, endDateTime))
-    if deviceId != "":
-        whereParamArray.append("rMessages.deviceid = '%s'" % deviceId)
-    if sensorId != "":
-        whereParamArray.append("records.sensorid = '%s'" % sensorId)
+    if not event.get("deviceId") is None:
+        whereParamArray.append(" AND rMessages.deviceid = '%s'" % event["deviceId"])
+    if not event.get("sensorId") is None:
+        whereParamArray.append(" AND records.sensorid = '%s'" % event["sensorId"])
 
     # and区切りの文字列返却
     print (" AND ".join(whereParamArray))
-    return " AND ".join(whereParamArray)
+    
+    resultParam = {
+        "startDateInt" : startDateInt
+        , "endDateInt" : endDateInt
+        , "startDateTime" : startDt
+        , "endDateTime" : endDt
+        , "whereParam" : "".join(whereParamArray)
+        }
+    return resultParam
+
 
 # --------------------------------------------------
 # S3からデータの取得
@@ -127,14 +162,25 @@ def get_recovery_data(event):
 
     # 動的な抽出条件
     createWhereParam(event)
-
+    
+    # エッジ区分に応じてテーブル名/SQLを分岐
+    targetAthenaTable = ""
+    targetAthenaSql = ""
+    if event["edgeType"] == EdgeTypeEnum.DeviceGateway:
+        targetAthenaTable = ATHENA_DGW_TABLE
+        targetAthenaSql = "sql/athena/findDGW.sql"
+    elif event["edgeType"] == EdgeTypeEnum.Monone:
+        targetAthenaTable = ATHENA_MONONE_TABLE
+        targetAthenaSql = "sql/athena/findMonone.sql"
+    else:
+        raise TypeError("The parameters is length invalid. [edgeType:%s]" % event("edgeType"))
+    
     # created query
-    params = {
-        "databaseName": ATENA_DATABASE
-        ,"tableName": ATENA_TABLE
-        ,"whereParam": createWhereParam(event)
-    }
-    queryString = initCommon.getQuery("sql/athena/find.sql") % params
+    params = createWhereParam(event)
+    params["databaseName"] = ATHENA_DATABASE
+    params["tableName"] = targetAthenaTable
+    
+    queryString = initCommon.getQuery(targetAthenaSql) % params
     LOGGER.debug(queryString)
     # athena client
     client = boto3.client('athena')
@@ -143,7 +189,7 @@ def get_recovery_data(event):
     response = client.start_query_execution(
         QueryString=queryString,
         QueryExecutionContext={
-            'Database': ATENA_DATABASE
+            'Database': ATHENA_DATABASE
         },
         ResultConfiguration={
             'OutputLocation': 's3://%s/%s' % (CLIENT_NAME, S3_OUTPUT),
@@ -169,7 +215,7 @@ def get_recovery_data(event):
             raise Exception("STATUS:" + query_execution_status)
 
         else:
-            time.sleep(RETRY_INTERVAL / 1000) # ミリ秒単位
+            time.sleep(RETRY_INTERVAL / 1000)  # ミリ秒単位
     else:
         client.stop_query_execution(QueryExecutionId=query_execution_id)
         LOGGER.error('リトライ回数を超過しました。処理を終了します。')
@@ -192,22 +238,32 @@ def get_recovery_data(event):
     # get data
     list = []
     for row in resultSetRows:
-        map = {
-             "deviceId" : row["Data"][0]["VarCharValue"]
-            ,"requestTimeStamp" : row["Data"][1]["VarCharValue"]
-            ,"sensorId" : row["Data"][2]["VarCharValue"]
-            ,"timeStamp" : row["Data"][3]["VarCharValue"]
-            ,"value" : row["Data"][4]["VarCharValue"]
-        }
+        if event["edgeType"] == EdgeTypeEnum.DeviceGateway:
+            map = {
+                 "deviceId": row["Data"][0]["VarCharValue"]
+                , "requestTimeStamp": row["Data"][1]["VarCharValue"]
+                , "sensorId": row["Data"][2]["VarCharValue"]
+                , "timeStamp": row["Data"][3]["VarCharValue"]
+                , "value": row["Data"][4]["VarCharValue"]
+            }
+        else:
+            map = {
+                 "deviceId": row["Data"][0]["VarCharValue"]
+                , "requestTimeStamp": row["Data"][1]["VarCharValue"]
+                , "tenantId": row["Data"][2]["VarCharValue"]
+                , "score": row["Data"][3]["VarCharValue"]
+            }
+            
         list.append(map)
 
-    #ヘッダーの削除
+    # ヘッダーの削除
     list.pop(0)
 
     if len(list) == 0:
         raise Exception ("対象のバックアップファイルが存在しませんでした。")
  
     return list
+
 
 # --------------------------------------------------
 # 戻り値の作成
@@ -224,7 +280,7 @@ def getReceivedMessages(recoveryDataList):
     recordsSize = 0
 
     # デバイスID,受信日時昇順ソート
-    recoveryDataList.sort(key=lambda x:(x["deviceId"],x["requestTimeStamp"]))
+    recoveryDataList.sort(key=lambda x:(x["deviceId"], x["requestTimeStamp"]))
 
     # 受信メッセージ単位
     for i in range(len(recoveryDataList)):
@@ -245,12 +301,15 @@ def getReceivedMessages(recoveryDataList):
             tempTable["requestTimeStamp"] = receivedMessages["requestTimeStamp"]
 
         # records要素は追記
+        reDict = {}
+        if not receivedMessages.get("sensorId") is None : reDict["sensorId"] = receivedMessages["sensorId"]
+        if not receivedMessages.get("timeStamp") is None : reDict["timeStamp"] = receivedMessages["timeStamp"]
+        if not receivedMessages.get("value") is None : reDict["value"] = receivedMessages["value"]
+        if not receivedMessages.get("tenantId") is None : reDict["tenantId"] = receivedMessages["tenantId"]
+        if not receivedMessages.get("score") is None : reDict["score"] = receivedMessages["score"]
+        
         recordsArray = []
-        recordsArray.append({
-                "sensorId" : receivedMessages["sensorId"]
-                , "timeStamp" : receivedMessages["timeStamp"]
-                , "value" : receivedMessages["value"]
-            })
+        recordsArray.append(reDict)
         if "records" in tempTable:
             tempTable["records"].extend(recordsArray)
         else:
@@ -267,6 +326,7 @@ def getReceivedMessages(recoveryDataList):
         reReceivedMessages.append(tempTable)
 
     return reReceivedMessages
+
 
 # --------------------------------------------------
 # 公開DB作成機能の呼び出し
@@ -289,13 +349,30 @@ def latestOrderInvokeConvert(recoveryDataList):
         strJsonResult = json.dumps(reEventTable, ensure_ascii=False, default=initCommon.json_serial)
     
         # 公開DB作成機能の呼び出し
-        LOGGER.info("公開db作成機能-開始 [deviceId:%s]" % rMessage["deviceId"])
+        LOGGER.info("公開db作成機能-開始 : %s" % strJsonResult)
         lambdaClient = boto3.client("lambda")
-        lambdaClient.invoke(
+        result = lambdaClient.invoke(
                 FunctionName=LATERST_ORDER_ARN,
                 Payload=strJsonResult
              )
-        LOGGER.info("公開db作成機能-終了 [deviceId:%s]" % rMessage["deviceId"])
+        resultJson = json.loads(result["Payload"].read()) 
+        LOGGER.info("公開db作成機能-終了 : %s %s" % (result, resultJson))
+
+# --------------------------------------------------
+# 起動パラメータチェック
+# --------------------------------------------------
+def isArgument(event):
+    
+    # 必須項目チェック
+    noneErrArray = []
+    noneErrArray.append("edgeType") if ("edgeType" not in event) else 0
+    noneErrArray.append("startDateTime") if ("startDateTime" not in event) else 0
+    noneErrArray.append("endDateTime") if ("endDateTime" not in event) else 0
+
+    # 必須項目がない場合は例外スロー
+    if 0 < len(noneErrArray):
+        raise Exception ("Missing required request parameters. [%s]" % ",".join(noneErrArray))
+
         
 #####################
 # main

@@ -437,13 +437,7 @@ def lambda_handler(event, context):
             if savingFlg != SavingEnum.Valid:
                 LOGGER.info("蓄積対象外の為、スキップします。(%s / %s)" % (deviceId, sensorId))
                 continue
-            
-            # リカバリー判定
-            if isRecevery == True:
-                LOGGER.info("リカバリ処理の為、公開DB取得をスキップして即時更新します。(%s / %s)" % (deviceId, sensorId))
-                publicTableValues.append(createPublicTableValues(dataCollectionSeq, isArgumentResultMap["cnvTimeStamp"], isArgumentResultMap["cnvValue"], nowDateTime))
-                continue
-            
+         
             # 更新先テーブルを分岐
             if isArgumentResultMap["errorMessage"] == "": 
                 if dataCollectionResultDict['edgeType'] == EdgeTypeEnum.DeviceGateway:

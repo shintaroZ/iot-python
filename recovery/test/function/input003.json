@@ -1,3 +1,4 @@
 {
-	"clientName": "eg-iot-develop"
+	"clientName": "eg-iot-develop",
+    "edgeType": 1
 }

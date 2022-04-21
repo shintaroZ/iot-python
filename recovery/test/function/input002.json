@@ -1,7 +1,6 @@
 {
 	"clientName": "eg-iot-develop",
+    "edgeType": 1,
 	"startDateTime": "2021-05-01 00:00:00",
-	"endDateTime": "2021-05-01 23:59:59",
-	"deviceId": "700400015-66DEF1DE",
-	"sensorId": "xxxxx"
+	"endDateTime": "2021-05-01 23:59:59"
 }

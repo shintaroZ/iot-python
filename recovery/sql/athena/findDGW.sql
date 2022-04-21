@@ -11,5 +11,7 @@ CROSS JOIN UNNEST
 CROSS JOIN UNNEST
 	(rMessages.records) as t(records)	
 WHERE
+	createdt between %(startDateInt)d and %(endDateInt)d 
+AND rMessages.requesttimestamp between CAST('%(startDateTime)s' as timestamp) and CAST('%(endDateTime)s' as timestamp) 
 	%(whereParam)s
 ;

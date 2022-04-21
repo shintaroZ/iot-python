@@ -1,4 +1,5 @@
 {
 	"clientName": "eg-iot-develop",
+    "edgeType": 1,
     "endDateTime": "2021-09-24 23:59:59"
 }

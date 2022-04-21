@@ -1,0 +1,7 @@
+{
+	"clientName": "eg-iot-develop",
+    "edgeType": 2,
+    "startDateTime": "2022-01-01 00:00:00",
+    "endDateTime": "2022-01-01 23:59:59",
+	"deviceId": "132"
+}

@@ -168,7 +168,7 @@ def lambda_handler(event, context):
                 if 0 < len(messageArray):
                     receivedMessagesDict["queue"] = queueName
                     receivedMessagesDict["deviceId"] = tenantIdDict["tenantId"]
-                    receivedMessagesDict["requestTimeStamp"] = initCommon.getSysDateJst().strftime('%Y/%m/%d %H:%M:%S')
+                    receivedMessagesDict["requestTimeStamp"] = initCommon.getSysDateJst().strftime('%Y-%m-%d %H:%M:%S')
                     receivedMessagesDict["recordsCount"] = len(messageArray)
                     receivedMessagesDict["records"] = messageArray
                     
