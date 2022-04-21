@@ -32,7 +32,7 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , lambda_function.DB_CONNECT_TIMEOUT)
 
 
-
+    
     # ----------------------------------------------------------------------
     # getMasterDataCollection()の正常系テスト
     # 該当データありの場合、レコード情報が返却されること。
@@ -40,14 +40,14 @@ class LambdaFunctionTest(unittest.TestCase):
     def test_getMasterSensorDistribution_001(self):
         print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input001.json')
-        
+    
         # マスタメンテナンス
         RDS.execute(initCommon.getQuery("test/sql/delete_m_data_collection.sql"))
         RDS.execute(initCommon.getQuery("test/sql/delete_m_link_flg.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_data_collection_Fix001.sql"))
         RDS.execute(initCommon.getQuery("test/sql/upsert_m_link_flg_Fix001.sql"))
         RDS.commit()
-        
+    
         result = lambda_function.getMasterDataCollection(RDS, "UT_DEVICE001", "UT_SEN001")
         self.assertEqual(result['sensorName'], "温度testSensor")
     
@@ -111,7 +111,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result["records"][0]["receivedDatetime"], "2021/02/16 21:56:38.895000")
         self.assertEqual(result["records"][1]["dataCollectionSeq"], "4")
         self.assertEqual(result["records"][1]["receivedDatetime"], "2021/02/16 21:57:38.895000")
-
+    
     # ----------------------------------------------------------------------
     # lambda_handler()の正常系テスト
     # 公開DBが登録済みの場合、監視テーブルに登録されること。
@@ -150,12 +150,12 @@ class LambdaFunctionTest(unittest.TestCase):
                                 , { "p_occurredDateTimeStart": startDt
                                    , "p_occurredDateTimeEnd":endDt})
         self.assertEqual(result1["message"], "センサの欠損を検知しました。(デバイスID:UT_DEVICE001 送信日時:2021-02-16 12:56:38.895 センサID:UT_SEN001 タイムスタンプ:2021-02-16 12:56:38.895)")
-       
+    
         print ("============ result ============")
         print (result)
         self.assertEqual(result["clientName"], "eg-iot-develop")
         self.assertEqual(len(result["records"]), 0)
-
+    
     # ----------------------------------------------------------------------
     # lambda_handler()の正常系テスト
     # リカバリ用
@@ -358,7 +358,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(len(result["records"]), 1)
         self.assertEqual(result["records"][0]["dataCollectionSeq"], "101")
         self.assertEqual(result["records"][0]["receivedDatetime"], "2022/04/15 10:08:25.000000")
-
+    
     # ----------------------------------------------------------------------
     # mononeの登録済みケース
     # ----------------------------------------------------------------------
@@ -403,7 +403,7 @@ class LambdaFunctionTest(unittest.TestCase):
         print (result)
         self.assertEqual(result["clientName"], "eg-iot-develop")
         self.assertEqual(len(result["records"]), 0)
-        
+    
     # ----------------------------------------------------------------------
     # mononeのscoreがnullの場合、監視テーブルに登録されること。
     # ----------------------------------------------------------------------
@@ -444,7 +444,24 @@ class LambdaFunctionTest(unittest.TestCase):
         print (result)
         self.assertEqual(result["clientName"], "eg-iot-develop")
         self.assertEqual(len(result["records"]), 0)
+    
+    
+    
+
+    # ----------------------------------------------------------------------
+    # mononeのリカバリー
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_009(self):
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
+    
+    
+        # 実行
+        event = initCommon.readFileToJson('test/function/input009.json')
+        result = lambda_function.lambda_handler(event, None)
         
+        print ("============ result ============")
+        print (result)
+        self.assertEqual(len(result, 0))
         
         
     

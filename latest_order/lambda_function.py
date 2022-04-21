@@ -439,7 +439,7 @@ def lambda_handler(event, context):
                 continue
          
             # 更新先テーブルを分岐
-            if isArgumentResultMap["errorMessage"] == "": 
+            if isArgumentResultMap["errorMessage"] == "" or isRecevery: 
                 if dataCollectionResultDict['edgeType'] == EdgeTypeEnum.DeviceGateway:
                     # 更新先：時系列テーブル
                     LOGGER.info("時系列テーブル更新[ %d / %s / %s ]" % (dataCollectionSeq
