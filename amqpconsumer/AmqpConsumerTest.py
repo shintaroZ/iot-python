@@ -30,7 +30,7 @@ class AmqpConsumerTest(unittest.TestCase):
                                 , lambda_function.DB_PASSWORD
                                 , lambda_function.DB_NAME
                                 , lambda_function.DB_CONNECT_TIMEOUT)
-
+        
     @classmethod
     def tearDownClass(self):
         # RDS切断
