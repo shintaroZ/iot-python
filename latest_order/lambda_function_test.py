@@ -461,7 +461,6 @@ class LambdaFunctionTest(unittest.TestCase):
         
         print ("============ result ============")
         print (result)
-        self.assertEqual(len(result, 0))
         
         
     
