@@ -44,21 +44,18 @@ def setMqPassword(mqPassword):
 def isArgument(event):
 
     # グループ名
-    if event.get("isTokenSkip") is None:
-        try:
-            isTokenSkip = False
-            
-            # トークン取得
-            token = event["idToken"]
+    try:
+        # トークン取得
+        token = event["idToken"]
+
+        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
     
-            groupList = initCommon.getPayLoadKey(token, "cognito:groups")
-        
-            # 顧客名がグループ名に含まれること
-            if (event["clientName"] not in groupList):
-                raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
-    
-        except Exception as ex:
-            raise Exception("Authentication Error. [%s]" %  ex)
+        # 顧客名がグループ名に含まれること
+        if (event["clientName"] not in groupList):
+            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+
+    except Exception as ex:
+        raise Exception("Authentication Error. [%s]" %  ex)
      
     # 引数がある場合はチェック
     try:
@@ -122,7 +119,7 @@ def getSendMessageBody(sendMsg):
     if sendMsg["messageBody"].get("records") is not None:
         for record in sendMsg["messageBody"]["records"]:
             resultArray.append(record)
-        resultStr = str(resultArray)
+        resultStr = str(resultArray).replace("'", "\"")
     else:
         resultStr = "{}"
         
