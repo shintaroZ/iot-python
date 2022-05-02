@@ -31,6 +31,7 @@ DATA_COLLECTION_SEQ = "dataCollectionSeq"
 RECEIVED_DATETIME = "receivedDatetime"
 QUEUE = "queue"
 RECORDS_COUNT = "recordsCount"
+IS_TOKEN_SKIP = "isTokenSkip"
 
 TENANT_ID = "tenantId"
 STATUS = "status"
@@ -228,10 +229,11 @@ def createErrDelAmqpProducerParam(clientName, param):
     childDict = {}
     childDict[DEVICE_ID] = param.get(DEVICE_ID)
     childDict[ROUTING_KEY] = "Clean_Error_Marking"
-    childDict[RECORDS] = {}
+    childDict[MESSAGE_BODY] = {}
     
     resultDict[CLIENT_NAME] = clientName
     resultDict[SEND_MESSAGES] = [childDict]  # 配列
+    resultDict[IS_TOKEN_SKIP] = True
     
     return resultDict
 
@@ -287,9 +289,10 @@ def lambda_handler(event, context):
                                         , param=neParam)
                 
                 # ****** MQ送信機能 ******
-                scResult = invokeLambda(lambdaFuncName="異常音ファイル作成機能"
-                                        , lambdaArn=SOUND_CREATER_ARN
-                                        , param=neParam)
+                errDelAmqpParam = createErrDelAmqpProducerParam(event["clientName"], message)
+                scResult = invokeLambda(lambdaFuncName="MQ送信機能"
+                                        , lambdaArn=AMQP_PRODUCER_ARN
+                                        , param=errDelAmqpParam)
                 
                 
             elif message[QUEUE] == "Restart_AI":

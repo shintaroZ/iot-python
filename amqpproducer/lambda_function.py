@@ -45,14 +45,15 @@ def isArgument(event):
 
     # グループ名
     try:
-        # トークン取得
-        token = event["idToken"]
-
-        groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+        if event.get("isTokenSkip") is None:
+            # トークン取得
+            token = event["idToken"]
     
-        # 顧客名がグループ名に含まれること
-        if (event["clientName"] not in groupList):
-            raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
+            groupList = initCommon.getPayLoadKey(token, "cognito:groups")
+        
+            # 顧客名がグループ名に含まれること
+            if (event["clientName"] not in groupList):
+                raise Exception("clientNameがグループに属していません。clientName:%s groupName:%s" % (event["clientName"], ",".join(groupList) ))
 
     except Exception as ex:
         raise Exception("Authentication Error. [%s]" %  ex)
@@ -118,7 +119,16 @@ def getSendMessageBody(sendMsg):
     resultArray = []
     if sendMsg["messageBody"].get("records") is not None:
         for record in sendMsg["messageBody"]["records"]:
-            resultArray.append(record)
+            
+            # fileName→filenameへ変更
+            newDict = {}
+            if record.get("fileName") is None:
+                newDict = record
+            else:
+                newDict["filename"] = record.get("fileName")
+                newDict["data"] = record.get("data")
+            
+            resultArray.append(newDict)
         resultStr = str(resultArray).replace("'", "\"")
     else:
         resultStr = "{}"
