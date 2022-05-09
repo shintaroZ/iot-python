@@ -1,0 +1,9 @@
+{
+	"JudgeFFTWidth":4096,
+	"JudgeMelBandNum":64,
+	"JudgeClusterNum":1,
+	"JudgeThreshold":1000,
+	"SlidingThresholdUpper":1000,
+	"SlidingThresholdLower":-900,
+	"SoundPressureThreshold":0.15
+}

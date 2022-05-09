@@ -9,6 +9,7 @@ import initCommon
 import mqCommon as mq
 import configparser
 import sys
+import base64
 
 
 # -------------------------------------
@@ -38,7 +39,6 @@ class MqCommonTest(unittest.TestCase):
                 break
             except Exception as ex:
                 print("***** mq connect retry [%d]" % num)
-        
             
     @classmethod
     def tearDownClass(self):
@@ -54,7 +54,87 @@ class MqCommonTest(unittest.TestCase):
     # テストメソッドの実行が終わるたびに呼ばれる
     def tearDown(self):
         pass
-    
+       
+    @unittest.skip("検証用")
+    # ------------------------------------------------------
+    # キューの中身を全て取得してキューが空になること。
+    # ------------------------------------------------------
+    def test_x_fff(self):
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
+        
+        resultArray = self.MQ_CONNECT.getQueueMessage(queueName="Queue_To_Tenant_101")
+        for result in resultArray:
+            print (result)
+        
+
+        # # byte文字列をbyteへ変換
+        # errReqStr = initCommon.getQuery("ERR_GaussianMixture_ID01-body.txt")
+        #
+        # # endode
+        # errReqByte = errReqStr.encode(encoding='utf-8')
+        #
+        # # b64でデコード     
+        # decodeStr = base64.b64decode(errReqByte)
+        #
+        # with open("ERR_OUTPUT_DECODE_GaussianMixture_ID01", "wb") as f:
+        #     f.write(decodeStr)
+            
+       
+        # img = None
+        # json_path = "test/threshold_ID01.json"
+        # ai_path = "test/GaussianMixture_ID01.pkl"
+        
+        # with open(file_path, "r", encoding = "shift_jis") as f:
+        
+        # # バイナリモードで開く
+        # with open(json_path, "rb") as f:
+        #     jsonImg = f.read()
+        #     jsonEnc = base64.b64encode(jsonImg)
+        # with open(ai_path, "rb") as f:
+        #     aiImg = f.read()
+        #     aiEnc = base64.b64encode(aiImg)
+        
+        # # テキストモードで開く
+        # with open(json_path, "r") as f:
+        #     jsonStr = f.read()
+        # # with open(ai_path, "r", encoding="cp037") as f:
+        # # with open(ai_path, "r", encoding="cp437") as f:
+        # with open(ai_path, "r", encoding="utf_16") as f:
+        #     aiStr = f.read()
+        
+        # print("★json-body")
+        # with open("threshold_ID01-body", 'w') as f4:
+        #     f4.write(jsonEnc.decode())
+        # print("★AI-body")
+        # with open("GaussianMixture_ID01-body", 'w') as f4:
+        #     f4.write(aiEnc.decode())
+        #
+        # print("★json file")
+        # with open("NEW_threshold_ID01.json", 'wb') as f4:
+        #     f4.write(base64.b64decode(jsonEnc))
+        # print("★AI file")
+        # with open("NEW_GaussianMixture_ID01.pkl", 'wb') as f4:
+        #     f4.write(base64.b64decode(aiEnc))
+        #
+
+        # with open(json_path, "rb") as f:
+        #     img = f.read()
+        #
+        # print(img)
+        # # img = initCommon.getQuery("test/base64_AI").encode('utf-8')
+        # img = initCommon.getQuery("test/base64_AI").encode('shift-jis')
+        #
+        # # with open(file_path, 'rb') as f:
+        # #     img = base64.b64encode(f.read())
+        # #
+        # #
+        # with open("New_GaussianMixture_ID01.pkl", 'bw') as f4:
+        #     f4.write(base64.b64decode(aiEnc))
+        
+        # print("★start")
+        # print(img)
+        # print("★end")     
+        
     # ------------------------------------------------------
     # キューの中身を全て取得してキューが空になること。
     # ------------------------------------------------------
@@ -85,7 +165,6 @@ class MqCommonTest(unittest.TestCase):
                 self.assertEqual(result["tenantId"], "2")
                 isCheck2 = True
         self.assertTrue(isCheck1 and isCheck2)
-            
     
     # ------------------------------------------------------
     # TENANT_ID:2のみキューを取得すること。
@@ -114,8 +193,7 @@ class MqCommonTest(unittest.TestCase):
                 isCheck1 = True
             if result["tenantId"] in ["2"]:
                 isCheck2 = True
-        self.assertTrue(isCheck1==False and isCheck2)
-    
+        self.assertTrue(isCheck1 == False and isCheck2)
     
     # ------------------------------------------------------
     # TENANT_IDが存在しない場合は無視されること。
@@ -156,3 +234,4 @@ class MqCommonTest(unittest.TestCase):
         for result in resultArray:
             print(result)
         self.assertEqual(len(resultArray), 1)
+

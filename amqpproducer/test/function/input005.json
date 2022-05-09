@@ -2,7 +2,7 @@
 	"clientName": "eg-iot-develop",
 	"sendMessages": [
 		{
-			"deviceId": "132",
+			"deviceId": "1",
 			"routingKey": "Replace_Edge_Setting",
 			"messageBody": {
 				"records": [
