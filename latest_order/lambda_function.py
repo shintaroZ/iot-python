@@ -162,11 +162,11 @@ def getMasterDataCollection(rds, paramDeviceId, paramSensorId):
     try:
         result = rds.fetchone(query, params)
         if result is None:
-            LOGGER.error("センサ振分けマスタに未定義のデータを受信しました。(%s / %s)" % (paramDeviceId, paramSensorId));
+            LOGGER.error("データ定義マスタに未定義のデータを受信しました。(%s / %s)" % (paramDeviceId, paramSensorId));
             del rds
             sys.exit()
     except Exception  as e:
-        LOGGER.error('センサ振分けマスタ取得時にエラーが発生しました。(%s / %s)' % (paramDeviceId, paramSensorId));
+        LOGGER.error('データ定義マスタ取得時にエラーが発生しました。(%s / %s)' % (paramDeviceId, paramSensorId));
         del rds
         raise(e)
 
@@ -197,6 +197,7 @@ def isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict
     resultMap["errorMessage"] = ""
     resultMap["cnvTimeStamp"] = ""
     resultMap["cnvValue"] = ""
+    errMsg = ""
     
     try:
         # timeStampが指定ありの場合のみチェック
@@ -205,13 +206,13 @@ def isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict
                 resultMap["cnvTimeStamp"] = datetime.datetime.strptime(record[TIMESTAMP], '%Y-%m-%d %H:%M:%S.%f')
                 resultMap["cnvTimeStamp"] = resultMap["cnvTimeStamp"] + datetime.timedelta(seconds=32400)
             else:
-                resultMap["errorMessage"] = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % \
+                errMsg = "センサの受信タイムスタンプが不正です。(デバイスID:%s 送信日時:%s センサID:%s タイムスタンプ:%s)" % \
                                                                                     (
                                                                                         deviceId
                                                                                         , requestTimeStamp
                                                                                         , record.get(SENSOR_ID)
                                                                                         , record.get(TIMESTAMP)) 
-                raise Exception(resultMap["errorMessage"])
+                raise Exception(errMsg)
 
         # valueが指定ありの場合のみチェック
         if not record.get(VALUE) is None:
@@ -223,39 +224,39 @@ def isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict
             elif (dataCollectionResultDict["collectionValueType"] == CollectionValueTypeEnum.Boolean) and initCommon.isValidateBoolean(record.get(VALUE)):
                 # 型判定
                 if (isinstance(record.get(VALUE), str) and record.get(VALUE).upper() == "FALSE") \
-                   or (isinstance(record.get(VALUE), bool) and value == False):
+                   or (isinstance(record.get(VALUE), bool) and record.get(VALUE) == False):
                     resultMap["cnvValue"] = 1
                 else:
                     resultMap["cnvValue"] = 0
             else:
-                resultMap["errorMessage"] = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサID:%s 値:%s)" % \
+                errMsg = "センサの値が不正です。(デバイスID:%s 送信日時:%s センサID:%s 値:%s)" % \
                                                                     (
                                                                         deviceId
                                                                         , requestTimeStamp
                                                                         , record.get(SENSOR_ID)
                                                                         , record.get(VALUE)) 
-                raise Exception(resultMap["errorMessage"])
+                raise Exception(errMsg)
                 
         # エッジ区分＝2（Monone）の場合のみチェック
         if dataCollectionResultDict["edgeType"] == EdgeTypeEnum.Monone:
             
             # 存在チェック
             if record.get(TENANT_ID) is None:
-                resultMap["errorMessage"] = "TENANT_IDが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
-                raise Exception(resultMap["errorMessage"])
+                errMsg = "TENANT_IDが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
+                raise Exception(errMsg)
             if record.get(SCORE) is None:
-                resultMap["errorMessage"] = "スコアデータが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
-                raise Exception(resultMap["errorMessage"])
+                errMsg = "スコアデータが存在しません。(デバイスID:%s 送信日時:%s)" % (deviceId, requestTimeStamp) 
+                raise Exception(errMsg)
             
             # スペース区切りで分割し、要素数が9個であること。
             scoreArray = record.get(SCORE).replace("\n", "").split(" ")
             if not len(scoreArray) == 9:
-                resultMap["errorMessage"] = "スコアデータのフォーマットが不正です。(デバイスID:%s 送信日時:%s スコアデータ:%s)" % \
+                errMsg = "スコアデータのフォーマットが不正です。(デバイスID:%s 送信日時:%s スコアデータ:%s)" % \
                                                                                     (
                                                                                         deviceId
                                                                                         , requestTimeStamp
                                                                                         , record.get(SCORE)) 
-                raise Exception(resultMap["errorMessage"])
+                raise Exception(errMsg)
             
             # 第１要素と第２要素を結合
             strDateTime = "%s %s" % (scoreArray[ScoreEnum.Date], scoreArray[ScoreEnum.Time])
@@ -263,7 +264,8 @@ def isArgmentRecord(deviceId, requestTimeStamp, record, dataCollectionResultDict
                 
     except Exception as ex:
         resultMap["isErr"] = True
-        LOGGER.warn("isArgmentRecord Error : %s" , ex)
+        resultMap["errorMessage"] = ex
+        LOGGER.warn(resultMap["errorMessage"] )
     return resultMap
 
     

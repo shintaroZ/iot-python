@@ -13,17 +13,17 @@
 				{
 					"sensorId": "UT_SEN002",
 					"timeStamp": "2021-07-05 03:00:00.000",
-					"value": 2345
+					"value": "2345"
 				},
 				{
 					"sensorId": "UT_SEN004",
 					"timeStamp": "2021-07-05 03:10:00.000",
-					"value": "False"
+					"value": "false"
 				},
 				{
 					"sensorId": "UT_SEN004",
 					"timeStamp": "2021-07-05 03:12:00.000",
-					"value": "True"
+					"value": true
 				}
 			]
 		}
