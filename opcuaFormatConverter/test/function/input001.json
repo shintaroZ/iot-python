@@ -1,0 +1,75 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "c836eef2-095d-4746-9de5-42df7f6695c7",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872082,
+							"offsetInNanos": 408000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 623
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872072,
+							"offsetInNanos": 405000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 622
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872102,
+							"offsetInNanos": 415000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 623
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872112,
+							"offsetInNanos": 409000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 624
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872122,
+							"offsetInNanos": 408000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 624
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667872092,
+							"offsetInNanos": 402000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 623
+						}
+					}
+				]
+			}
+		}
+	],
+	"requestTimestamp": "2022-11-08 10:48:56"
+}

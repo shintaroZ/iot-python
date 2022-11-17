@@ -1,0 +1,180 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"type": 99999,
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": 99999,
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": 99999,
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": "hoge",
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": "hoge"
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "PropertyValueUpdate",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": 99999,
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		}
+	],
+	"requestTimestamp": "2022-11-08 10:48:56"
+}

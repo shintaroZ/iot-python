@@ -1,0 +1,27 @@
+{
+	"clientName": "eg-iot-develop",
+	"receveryFlg": 1,
+	"receivedMessages": [
+		{
+			"deviceId": "UT_DEVICE001",
+			"requestTimeStamp": "2021-07-05 12:00:00.000",
+			"HOGE": [
+				{
+					"sensorId": "UT_SEN001",
+					"timeStamp": "2021-07-05 03:00:00.000",
+					"value": 1234
+				},
+				{
+					"sensorId": "UT_SEN002",
+					"timeStamp": "2021-07-05 03:00:00.000",
+					"value": 2345
+				},
+				{
+					"sensorId": "UT_SEN001",
+					"timeStamp": "2021-07-05 03:10:00.000",
+					"value": 3456
+				}
+			]
+		}
+	]
+}

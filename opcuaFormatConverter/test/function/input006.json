@@ -1,0 +1,263 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "payloadなし"
+		},
+		{
+			"type": "assetIdなし",
+			"payload": {
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "propertyIdなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "valuesなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId"
+			}
+		},
+		{
+			"type": "timestampなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "timeInSecondsなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "offsetInNanosなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "qualityなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"value": {
+							"integerValue": 47
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "valueなし",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD"
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		},
+		{
+			"type": "value空",
+			"payload": {
+				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
+				"propertyId": "propertyId",
+				"values": [
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314801,
+							"offsetInNanos": 68000000
+						},
+						"quality": "GOOD",
+						"value": {
+						}
+					},
+					{
+						"timestamp": {
+							"timeInSeconds": 1667314781,
+							"offsetInNanos": 61000000
+						},
+						"quality": "GOOD",
+						"value": {
+							"integerValue": 46
+						}
+					}
+				]
+			}
+		}
+	],
+	"requestTimestamp": "2022-11-08 10:48:56"
+}

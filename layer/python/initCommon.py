@@ -52,7 +52,7 @@ def getLogger(loglevel):
     handler = logging.StreamHandler(sys.stdout)
 
     # 出力フォーマット
-    strFormatter = '[%(levelname)s] %(asctime)s %(funcName)s %(message)s'
+    strFormatter = '[%(levelname)s] %(asctime)s %(thread)d %(funcName)s %(message)s'
     formatter = logging.Formatter(strFormatter)
     formatter.converter = customTime
     handler.setFormatter(formatter)
@@ -147,9 +147,7 @@ def isValidateFloat(value):
 
     result = False
     try:
-        # float型へのキャストで妥当性チェック
-        float(value)
-        result = True
+        result = isinstance(value, float) 
     except ValueError:
         print('validate error (%s)' % value)
 
@@ -163,14 +161,26 @@ def isValidateNumber(value):
 
     result = False
     try:
-        # int型へのキャストで妥当性チェック
-        int(value)
-        result = True
+        result = isinstance(value, int) 
     except ValueError:
         print('validate error (%s)' % value)
 
     return result
 
+
+# --------------------------------------------------
+# 文字列チェック(true:正常、false:異常）
+# value(obj)　: 入力値
+# --------------------------------------------------
+def isValidateString(value):
+
+    result = False
+    try:
+        result = isinstance(value, str) 
+    except ValueError:
+        print('validate error (%s)' % value)
+
+    return result
 
 # --------------------------------------------------
 # Boolean型チェック(true:正常、false:異常）
@@ -216,4 +226,22 @@ def readFileToJson(query_file_path, enc="utf-8_sig"):
 
     f = open(query_file_path, 'r', encoding=enc)
     return json.load(f)
+
+# --------------------------------------------------
+# Lambda実行
+# lambdaFuncName(str)　  : Lambda名
+# lambdaArn(str)　       : ARN
+# param(str)　           : パラメータ
+# --------------------------------------------------
+def invokeLambda(lambdaFuncName, lambdaArn, param):
+
+    LOGGER.info("%s 開始 : %s" % (lambdaFuncName, param))
+    lambdaClient = boto3.client("lambda")
+    result = lambdaClient.invoke(
+                FunctionName=lambdaArn,
+                Payload=convDictToStr(param)
+             )
+    resultJson = json.loads(result["Payload"].read()) 
+    LOGGER.info("%s 終了 : %s" % (lambdaFuncName, resultJson))
+    return resultJson
 
