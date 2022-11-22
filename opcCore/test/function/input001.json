@@ -4,67 +4,67 @@
 		{
 			"type": "PropertyValueUpdate",
 			"payload": {
-				"assetId": "cb24680e-b029-44c4-a7e6-feff0e4e780e",
-				"propertyId": "eeb6b315-d2b1-4573-a582-337e2d02554f",
+				"assetId": "UT_DEVICE001",
+				"propertyId": "UT_SEN001",
 				"values": [
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314801,
-							"offsetInNanos": 68000000
+							"timeInSeconds": 1667872082,
+							"offsetInNanos": 408000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.0
+							"integerValue": 623
 						}
 					},
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314781,
-							"offsetInNanos": 61000000
+							"timeInSeconds": 1667872072,
+							"offsetInNanos": 405000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.1
+							"integerValue": 622
 						}
 					},
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314811,
-							"offsetInNanos": 74000000
+							"timeInSeconds": 1667872102,
+							"offsetInNanos": 415000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.2
+							"integerValue": 623
 						}
 					},
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314791,
-							"offsetInNanos": 68000000
+							"timeInSeconds": 1667872112,
+							"offsetInNanos": 409000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.3
+							"integerValue": 624
 						}
 					},
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314821,
-							"offsetInNanos": 68000000
+							"timeInSeconds": 1667872122,
+							"offsetInNanos": 408000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.4
+							"integerValue": 624
 						}
 					},
 					{
 						"timestamp": {
-							"timeInSeconds": 1667314831,
-							"offsetInNanos": 62000000
+							"timeInSeconds": 1667872092,
+							"offsetInNanos": 402000000
 						},
 						"quality": "GOOD",
 						"value": {
-							"doubleValue": 10.5
+							"integerValue": 623
 						}
 					}
 				]

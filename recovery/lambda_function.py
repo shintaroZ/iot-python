@@ -13,12 +13,14 @@ from enum import IntEnum
 class EdgeTypeEnum(IntEnum):
     DeviceGateway = 1
     Monone = 2
+    Opcua = 3
 
     
 # athena setting
 ATHENA_DATABASE = 'hoge'
 ATHENA_DGW_TABLE = 'hoge'
 ATHENA_MONONE_TABLE = 'hoge'
+ATHENA_OPC_TABLE = 'hoge'
 S3_OUTPUT = 's3://hoge'
 RETRY_COUNT = 10
 RETRY_INTERVAL = 200
@@ -48,6 +50,11 @@ def setAthenaDgwTable(atenaTable):
 def setAthenaMononeTable(athenaMononeTable):
     global ATHENA_MONONE_TABLE
     ATHENA_MONONE_TABLE = athenaMononeTable
+
+
+def setAthenaOpcTable(athenaOpcTable):
+    global ATHENA_OPC_TABLE
+    ATHENA_OPC_TABLE = athenaOpcTable
 
 
 def setS3Output(s3Output):
@@ -112,6 +119,7 @@ def initConfig(clientName):
         setAthenaDatabase(config_ini['athena setting']['database'])
         setAthenaDgwTable(config_ini['athena setting']['table_dgw'])
         setAthenaMononeTable(config_ini['athena setting']['table_monone'])
+        setAthenaOpcTable(config_ini['athena setting']['table_opc'])
         setS3Output(config_ini['athena setting']['output'])
         setRetryCount(config_ini['athena setting']['retryCount'])
         setRetryInterval(config_ini['athena setting']['retryInterval'])
@@ -138,19 +146,19 @@ def createWhereParam(event):
 
     whereParamArray = []
     if not event.get("deviceId") is None:
-        whereParamArray.append(" AND rMessages.deviceid = '%s'" % event["deviceId"])
+        whereParamArray.append("SUB.deviceid = '%s'" % event["deviceId"])
     if not event.get("sensorId") is None:
-        whereParamArray.append(" AND records.sensorid = '%s'" % event["sensorId"])
+        whereParamArray.append("SUB.sensorid = '%s'" % event["sensorId"])
 
-    # and区切りの文字列返却
-    print (" AND ".join(whereParamArray))
+    # and区切りの文字列に整形
+    strWhereParam = " AND ".join(whereParamArray)
     
     resultParam = {
         "startDateInt" : startDateInt
         , "endDateInt" : endDateInt
         , "startDateTime" : startDt
         , "endDateTime" : endDt
-        , "whereParam" : "".join(whereParamArray)
+        , "whereParam" : strWhereParam
         }
     return resultParam
 
@@ -172,6 +180,10 @@ def get_recovery_data(event):
     elif event["edgeType"] == EdgeTypeEnum.Monone:
         targetAthenaTable = ATHENA_MONONE_TABLE
         targetAthenaSql = "sql/athena/findMonone.sql"
+    elif event["edgeType"] == EdgeTypeEnum.Opcua:
+        targetAthenaTable = ATHENA_OPC_TABLE
+        targetAthenaSql = "sql/athena/findOpc.sql"
+        
     else:
         raise TypeError("The parameters is length invalid. [edgeType:%s]" % event("edgeType"))
     
@@ -349,14 +361,9 @@ def latestOrderInvokeConvert(recoveryDataList):
         strJsonResult = json.dumps(reEventTable, ensure_ascii=False, default=initCommon.json_serial)
     
         # 公開DB作成機能の呼び出し
-        LOGGER.info("公開db作成機能-開始 : %s" % strJsonResult)
-        lambdaClient = boto3.client("lambda")
-        result = lambdaClient.invoke(
-                FunctionName=LATERST_ORDER_ARN,
-                Payload=strJsonResult
-             )
-        resultJson = json.loads(result["Payload"].read()) 
-        LOGGER.info("公開db作成機能-終了 : %s %s" % (result, resultJson))
+        LOGGER.info("公開db作成機能 開始:%s" % strJsonResult)
+        latestResult = initCommon.invokeLambda(LATERST_ORDER_ARN, strJsonResult)
+        LOGGER.info("公開db作成機能 終了:%s" % latestResult)
 
 # --------------------------------------------------
 # 起動パラメータチェック

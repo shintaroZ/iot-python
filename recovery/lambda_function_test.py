@@ -51,7 +51,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result["endDateInt"], 20210924)
         self.assertEqual(result["startDateTime"].strftime('%Y-%m-%d %H:%M:%S'), "2021-09-24 00:00:00")
         self.assertEqual(result["endDateTime"].strftime('%Y-%m-%d %H:%M:%S'), "2021-09-24 04:59:59")
-        self.assertEqual(result["whereParam"], " AND rMessages.deviceid = '700400015-66DEF1DE' AND records.sensorid = 's2001'")
+        self.assertEqual(result["whereParam"], "SUB.deviceid = '700400015-66DEF1DE' AND SUB.sensorid = 's2001'")
              
     # ----------------------------------------------------------------------
     # パラメータが全てなしの場合、whereParamは空文字が返却されること。
@@ -83,7 +83,7 @@ class LambdaFunctionTest(unittest.TestCase):
         self.assertEqual(result["endDateInt"], 20210924)
         self.assertEqual(result["startDateTime"].strftime('%Y-%m-%d %H:%M:%S'), "2021-09-24 00:00:00")
         self.assertEqual(result["endDateTime"].strftime('%Y-%m-%d %H:%M:%S'), "2021-09-24 23:59:59")
-        self.assertEqual(result["whereParam"], " AND rMessages.deviceid = '700400015-66DEF1DE'")
+        self.assertEqual(result["whereParam"], "SUB.deviceid = '700400015-66DEF1DE'")
         
     # ----------------------------------------------------------------------
     # s3に該当データあり(dgw)の場合、json整形後に公開db作成機能が呼び出されること。
@@ -113,4 +113,14 @@ class LambdaFunctionTest(unittest.TestCase):
         print("------------ %s start------------" % sys._getframe().f_code.co_name)
         event = initCommon.readFileToJson('test/function/input007.json')
         lambda_function.lambda_handler(event, None)
+
+    # ----------------------------------------------------------------------
+    # s3に該当データあり(OPC)の場合、json整形後に公開db作成機能が呼び出されること。
+    # 起動パラメータ:startDateTime、endDateTime、deviceId
+    # ----------------------------------------------------------------------
+    def test_lambda_handler_004(self):
+        print("------------ %s start------------" % sys._getframe().f_code.co_name)
+        event = initCommon.readFileToJson('test/function/input008.json')
+        lambda_function.lambda_handler(event, None)
+
 

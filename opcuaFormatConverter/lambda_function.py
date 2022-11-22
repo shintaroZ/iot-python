@@ -15,7 +15,7 @@ LOG_LEVEL = "INFO"
 # パラメータ用定数
 CLIENT_NAME = "clientName"
 RECEIVED_MESSAGES = "receivedMessages"
-REQUEST_TIMESTAMP = "requestTimestamp"
+REQUEST_TIMESTAMP = "requestTimeStamp"
 
 # setter
 def setLogger(logger):

@@ -115,13 +115,13 @@ class OpcValueModel:
         self.opcModelValueDict[self.VALUE][self.STRING_VALUE] = None
         
         # データ型に応じて動的にKeyを変更
-        if initCommon.isValidateFloat(value):
+        if initCommon.isValidateFloat(value, False):
             self.opcModelValueDict[self.VALUE][self.DOUBLE_VALUE] = value
-        elif initCommon.isValidateNumber(value):
+        elif initCommon.isValidateNumber(value, False):
             self.opcModelValueDict[self.VALUE][self.INTEGER_VALUE] = value
-        elif initCommon.isValidateBoolean(value):
+        elif initCommon.isValidateBoolean(value, False):
             self.opcModelValueDict[self.VALUE][self.BOOLEAN_VALUE] = value
-        elif initCommon.isValidateString(value):
+        elif initCommon.isValidateString(value, False):
             self.opcModelValueDict[self.VALUE][self.STRING_VALUE] = value
         
         

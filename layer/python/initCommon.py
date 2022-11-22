@@ -134,7 +134,7 @@ def validateTimeStamp(strTimeStamp):
         datetime.datetime.strptime(strTimeStamp, '%Y-%m-%d %H:%M:%S.%f')
         result = True
     except ValueError:
-        print('validate error (%s)' % strTimeStamp)
+        print('timestamp validate error (%s)' % strTimeStamp)
 
     return result
 
@@ -143,13 +143,15 @@ def validateTimeStamp(strTimeStamp):
 # 浮動小数点数値チェック(true:正常、false:異常）
 # value(obj)　: 入力値
 # --------------------------------------------------
-def isValidateFloat(value):
+def isValidateFloat(value, outputPrintFlg=True):
 
     result = False
     try:
-        result = isinstance(value, float) 
+        # float型へのキャストで妥当性チェック
+        float(value)
+        result = True
     except ValueError:
-        print('validate error (%s)' % value)
+        if outputPrintFlg : print('float validate error (%s)' % value)
 
     return result
 
@@ -157,13 +159,15 @@ def isValidateFloat(value):
 # 数値チェック(true:正常、false:異常）
 # value(obj)　: 入力値
 # --------------------------------------------------
-def isValidateNumber(value):
+def isValidateNumber(value, outputPrintFlg=True):
 
     result = False
     try:
-        result = isinstance(value, int) 
+        # int型へのキャストで妥当性チェック
+        int(value)
+        result = True
     except ValueError:
-        print('validate error (%s)' % value)
+        if outputPrintFlg : print('number validate error (%s)' % value)
 
     return result
 
@@ -172,13 +176,13 @@ def isValidateNumber(value):
 # 文字列チェック(true:正常、false:異常）
 # value(obj)　: 入力値
 # --------------------------------------------------
-def isValidateString(value):
+def isValidateString(value, outputPrintFlg=True):
 
     result = False
     try:
         result = isinstance(value, str) 
     except ValueError:
-        print('validate error (%s)' % value)
+        if outputPrintFlg : print('string validate error (%s)' % value)
 
     return result
 
@@ -186,7 +190,7 @@ def isValidateString(value):
 # Boolean型チェック(true:正常、false:異常）
 # value(obj)　: 入力値
 # --------------------------------------------------
-def isValidateBoolean(value):
+def isValidateBoolean(value, outputPrintFlg=True):
 
     result = False
     try:
@@ -199,7 +203,7 @@ def isValidateBoolean(value):
             result = True
 
     except ValueError:
-        print('validate error (%s)' % value)
+        if outputPrintFlg : print('validate error (%s)' % value)
 
     return result
 
@@ -227,21 +231,32 @@ def readFileToJson(query_file_path, enc="utf-8_sig"):
     f = open(query_file_path, 'r', encoding=enc)
     return json.load(f)
 
+
+# --------------------------------------------------
+# Dict型をJson形式の文字列に変換して返却
+# --------------------------------------------------
+def convDictToStr(param):
+
+    resultStr = ""
+    if isinstance(param, dict):
+        resultStr = json.dumps(param, ensure_ascii=False, default=json_serial)
+    else:
+        resultStr = param
+    return resultStr
+
+
 # --------------------------------------------------
 # Lambda実行
-# lambdaFuncName(str)　  : Lambda名
 # lambdaArn(str)　       : ARN
 # param(str)　           : パラメータ
 # --------------------------------------------------
-def invokeLambda(lambdaFuncName, lambdaArn, param):
+def invokeLambda(lambdaArn, param):
 
-    LOGGER.info("%s 開始 : %s" % (lambdaFuncName, param))
     lambdaClient = boto3.client("lambda")
     result = lambdaClient.invoke(
                 FunctionName=lambdaArn,
                 Payload=convDictToStr(param)
              )
     resultJson = json.loads(result["Payload"].read()) 
-    LOGGER.info("%s 終了 : %s" % (lambdaFuncName, resultJson))
     return resultJson
 
