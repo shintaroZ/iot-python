@@ -1,5 +1,6 @@
 select
-	mdc.VERSION as version
+	mdc.DATA_COLLECTION_SEQ as dataCollectionSeq
+	, mdc.VERSION as version
 from
     M_DATA_COLLECTION mdc
 where

@@ -42,6 +42,7 @@ from
         and mct.COLLECTION_TYPE = mdc.COLLECTION_TYPE 
 where
     mdc.DELETE_FLG = 0 
+    and mdc.EDGE_TYPE in (1,2)
     and not exists ( 
         select
             1 

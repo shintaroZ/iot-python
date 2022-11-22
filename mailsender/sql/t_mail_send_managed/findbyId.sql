@@ -5,7 +5,7 @@ select
     , tmsm.MAIL_SEND_SEQ as mailSendSeq
     , case
        when tpt.SENSOR_VALUE is null
-       then ts.DETECTION_FLAG
+       then CAST(ts.DETECTION_FLAG AS CHAR)
        else tpt.SENSOR_VALUE
       end as sensorValue
     , ts.DETECTION_DATETIME

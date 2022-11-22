@@ -1,0 +1,29 @@
+{
+	"clientName": "eg-iot-develop",
+	"receivedMessages": [
+		{
+			"deviceId": "101",
+			"requestTimeStamp": "2022/04/19 12:00:00",
+			"records": [
+				{
+					"tenantId": "101",
+					"status": 1,
+					"filename": "20210422165000.mp3",
+					"timestamp": 1619077801895,
+					"chunk_no": 0,
+					"chunk_total": 2,
+					"data": "aaaaa"
+				},
+				{
+					"tenantId": "101",
+					"status": 1,
+					"filename": "20210422165000.mp3",
+					"timestamp": 1619077801895,
+					"chunk_no": 1,
+					"chunk_total": 2,
+					"data": "bbbbb"
+				}
+			]
+		}
+	]
+}

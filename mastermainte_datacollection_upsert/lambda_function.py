@@ -162,8 +162,8 @@ def isArgument(event):
     # noneErrArray.append(CLIENT_NAME) if (CLIENT_NAME not in eBody) else 0
     # noneErrArray.append(DEVICE_ID)if (DEVICE_ID not in eBody) else 0
     # noneErrArray.append(SENSOR_ID) if (SENSOR_ID not in eBody) else 0
-    noneErrArray.append(EDGE_TYPE) if (SENSOR_NAME not in eBody) else 0
-    noneErrArray.append(EQUIPMENT_ID) if (SENSOR_NAME not in eBody) else 0
+    noneErrArray.append(EDGE_TYPE) if (EDGE_TYPE not in eBody) else 0
+    noneErrArray.append(EQUIPMENT_ID) if (EQUIPMENT_ID not in eBody) else 0
     noneErrArray.append(SENSOR_NAME) if (SENSOR_NAME not in eBody) else 0
     noneErrArray.append(COLLECTION_VALUE_TYPE) if (COLLECTION_VALUE_TYPE not in eBody) else 0
     noneErrArray.append(COLLECTION_TYPE) if (COLLECTION_TYPE not in eBody) else 0
@@ -361,12 +361,21 @@ def createCommonParams(event, version):
     event[UPDATED_USER] = USER_NAME
     event[VERSION] = version
     return event
+    
+# --------------------------------------------------
+# 起動パラメータにシーケンス情報を付与して返却する。
+# --------------------------------------------------
+def createSoundFileParams(event, oldDataCollectionSeq, dataCollectionSeq):
+    event["oldDataCollectionSeq"] = oldDataCollectionSeq
+    event[DATA_COLLECTION_SEQ] = dataCollectionSeq
+    return event
 
 
 #####################
 # main
 #####################
 def lambda_handler(event, context):
+    print(event)
 
     # 初期処理
     initConfig(event["clientName"])
@@ -386,9 +395,13 @@ def lambda_handler(event, context):
 
     # バージョンのインクリメント
     version = 0
+    oldDataCollectionSeq = 0
     if result is not None and VERSION in result:
         version = result[VERSION] + 1
         LOGGER.info("登録対象バージョン [%d]" % version)
+    if result is not None and DATA_COLLECTION_SEQ in result:
+        oldDataCollectionSeq = result[DATA_COLLECTION_SEQ]
+        LOGGER.info("変更元データ定義マスタシーケンス [%d]" % oldDataCollectionSeq)
 
     # シーケンス取得
     dataCollectionSeq = 0
@@ -417,6 +430,12 @@ def lambda_handler(event, context):
         # データ定義マスタのINSERT
         LOGGER.info("データ定義マスタのINSERT [%s, %s]" % (event[DEVICE_ID], event[SENSOR_ID]) )
         rds.execute(initCommon.getQuery("sql/m_data_collection/insert.sql"), createDataCollectionParams(eBody, version, event[DEVICE_ID], event[SENSOR_ID]))
+        
+        # 音ファイル履歴のUPDATE
+        if 0 < oldDataCollectionSeq:
+            LOGGER.info("音ファイル履歴のUPDATE [%s => %s]" % (oldDataCollectionSeq, dataCollectionSeq) )
+            rds.execute(initCommon.getQuery("sql/t_soundfile_history/update.sql"), createSoundFileParams(eBody, oldDataCollectionSeq, dataCollectionSeq))
+        
     except Exception as ex:
         LOGGER.error("登録に失敗しました。ロールバックします。")
         rds.rollBack()
