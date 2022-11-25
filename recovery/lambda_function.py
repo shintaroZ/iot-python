@@ -250,7 +250,7 @@ def get_recovery_data(event):
     # get data
     list = []
     for row in resultSetRows:
-        if event["edgeType"] == EdgeTypeEnum.DeviceGateway:
+        if event["edgeType"] == EdgeTypeEnum.DeviceGateway or event["edgeType"] == EdgeTypeEnum.Opcua:
             map = {
                  "deviceId": row["Data"][0]["VarCharValue"]
                 , "requestTimeStamp": row["Data"][1]["VarCharValue"]

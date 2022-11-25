@@ -1,10 +1,8 @@
 SELECT
-	"SUB"."createdt" as createdt
-	,"SUB"."deviceId" as deviceId
+	"SUB"."deviceId" as deviceId
+	,"SUB"."requestTimeStamp" as requestTimeStamp
 	,"SUB"."sensorId" as sensorId
-	,"SUB"."ts" as timeStamp
-	,"SUB"."integerValue"
-	,"SUB"."stringValue"
+	,cast("SUB"."ts" as timeStamp) as timeStamp
 	,case 
 	   when ("SUB"."integerValue") IS NOT NULL then cast("SUB"."integerValue" as varchar)
 	   when ("SUB"."stringValue") IS NOT NULL then cast("SUB"."stringValue" as varchar)
