@@ -1,0 +1,1 @@
+delete from `M_EQUIPMENT` where EQUIPMENT_ID = 'X0001'

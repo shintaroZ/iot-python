@@ -1,0 +1,1 @@
+delete from `M_HIERARCHY` where HIERARCHY_ID = 'TH0001'
